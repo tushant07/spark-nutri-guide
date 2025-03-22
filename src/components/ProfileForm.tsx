@@ -2,6 +2,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/context/UserContext';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 const ProfileForm = () => {
   const navigate = useNavigate();
@@ -10,6 +18,7 @@ const ProfileForm = () => {
     age: '',
     weight: '',
     height: '',
+    gender: '',
     goal: '',
   });
   const [submitting, setSubmitting] = useState(false);
@@ -19,16 +28,22 @@ const ProfileForm = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const calculateCalorieTarget = (goal: string, weight: number): number => {
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const calculateCalorieTarget = (goal: string, weight: number, gender: string): number => {
+    let baseCalories = gender === 'Male' ? 2200 : 1900;
+    
     switch (goal) {
       case 'Increase Weight':
-        return 2500;
+        return baseCalories + 300;
       case 'Lose Weight':
-        return 1800;
+        return baseCalories - 300;
       case 'Build Muscle':
-        return 2200;
+        return baseCalories + 200;
       default:
-        return 2000;
+        return baseCalories;
     }
   };
 
@@ -41,14 +56,16 @@ const ProfileForm = () => {
       const age = parseInt(formData.age);
       const weight = parseInt(formData.weight);
       const height = parseInt(formData.height);
+      const gender = formData.gender as 'Male' | 'Female' | 'Other';
       const goal = formData.goal as 'Increase Weight' | 'Lose Weight' | 'Build Muscle';
       
-      const dailyCalorieTarget = calculateCalorieTarget(goal, weight);
+      const dailyCalorieTarget = calculateCalorieTarget(goal, weight, gender);
       
       setProfile({
         age,
         weight,
         height,
+        gender,
         goal,
         dailyCalorieTarget,
         created: true,
@@ -109,6 +126,26 @@ const ProfileForm = () => {
               onChange={handleChange}
               className="form-input"
             />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="gender" className="text-sm font-medium text-gray-700">
+              Gender
+            </Label>
+            <Select 
+              value={formData.gender} 
+              onValueChange={(value) => handleSelectChange('gender', value)}
+              required
+            >
+              <SelectTrigger id="gender" className="form-input">
+                <SelectValue placeholder="Select your gender" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Male">Male</SelectItem>
+                <SelectItem value="Female">Female</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
           <div>

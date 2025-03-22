@@ -2,11 +2,13 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 type Goal = 'Increase Weight' | 'Lose Weight' | 'Build Muscle';
+type Gender = 'Male' | 'Female' | 'Other';
 
 export interface UserProfile {
   age?: number;
   weight?: number;
   height?: number;
+  gender?: Gender;
   goal?: Goal;
   dailyCalorieTarget?: number;
   created: boolean;
