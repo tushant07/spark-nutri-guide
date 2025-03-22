@@ -23,15 +23,52 @@ export interface LoggedMeal {
   timestamp: Date;
 }
 
+export interface DailyData {
+  day: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  date: Date;
+}
+
 interface UserContextType {
   profile: UserProfile;
   setProfile: React.Dispatch<React.SetStateAction<UserProfile>>;
   loggedMeals: LoggedMeal[];
   addMeal: (meal: LoggedMeal) => void;
   totalCaloriesConsumed: number;
+  weeklyData: DailyData[];
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
+
+// Generate mock weekly data
+const generateMockWeeklyData = (): DailyData[] => {
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const today = new Date();
+  
+  return days.map((day, index) => {
+    // Set the date to be "index" days ago from today
+    const date = new Date();
+    date.setDate(today.getDate() - (6 - index));
+    
+    // Generate somewhat random but realistic values
+    const baseCalories = 1500 + Math.floor(Math.random() * 500);
+    const baseProtein = 20 + Math.floor(Math.random() * 40);
+    const baseCarbs = 40 + Math.floor(Math.random() * 80);
+    const baseFat = 15 + Math.floor(Math.random() * 30);
+    
+    return {
+      day,
+      calories: baseCalories,
+      protein: baseProtein,
+      carbs: baseCarbs,
+      fat: baseFat,
+      date
+    };
+  });
+};
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile>({
@@ -39,9 +76,32 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   });
   
   const [loggedMeals, setLoggedMeals] = useState<LoggedMeal[]>([]);
+  
+  // Initialize with mock weekly data
+  const [weeklyData, setWeeklyData] = useState<DailyData[]>(generateMockWeeklyData());
 
   const addMeal = (meal: LoggedMeal) => {
     setLoggedMeals((prevMeals) => [...prevMeals, meal]);
+    
+    // Update today's data in the weekly data when a meal is added
+    setWeeklyData(prevData => {
+      const today = new Date();
+      const todayStr = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][today.getDay()];
+      
+      return prevData.map(day => {
+        // Check if this is today's entry
+        if (day.day === todayStr) {
+          return {
+            ...day,
+            calories: day.calories + meal.calories,
+            protein: day.protein + meal.protein,
+            carbs: day.carbs + meal.carbs,
+            fat: day.fat + meal.fat
+          };
+        }
+        return day;
+      });
+    });
   };
 
   const totalCaloriesConsumed = loggedMeals.reduce(
@@ -57,6 +117,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         loggedMeals,
         addMeal,
         totalCaloriesConsumed,
+        weeklyData,
       }}
     >
       {children}

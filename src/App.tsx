@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Profile from "./pages/Profile";
 import MealLog from "./pages/MealLog";
 import Dashboard from "./pages/Dashboard";
+import WeeklyInsights from "./pages/WeeklyInsights";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="/meal-log" element={<MealLog />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/weekly-insights" element={<WeeklyInsights />} />
             <Route path="/plan" element={<Navigate to="/dashboard" />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

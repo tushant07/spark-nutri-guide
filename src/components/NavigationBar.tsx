@@ -1,6 +1,6 @@
 
 import { useNavigate, useLocation } from 'react-router-dom';
-import { User, Camera, LineChart, Home } from 'lucide-react';
+import { User, Camera, LineChart, Home, BarChart } from 'lucide-react';
 import { useUser } from '@/context/UserContext';
 
 const NavigationBar = () => {
@@ -43,11 +43,11 @@ const NavigationBar = () => {
         
         {profile.created && (
           <button 
-            onClick={() => navigate('/plan')}
-            className={`nav-item ${isActive('/plan') ? 'active' : ''}`}
+            onClick={() => navigate('/weekly-insights')}
+            className={`nav-item ${isActive('/weekly-insights') ? 'active' : ''}`}
           >
-            <LineChart size={22} className={isActive('/plan') ? 'text-spark-500' : 'text-gray-600'} />
-            <span className="nav-text">Plan</span>
+            <BarChart size={22} className={isActive('/weekly-insights') ? 'text-spark-500' : 'text-gray-600'} />
+            <span className="nav-text">Insights</span>
           </button>
         )}
       </div>
