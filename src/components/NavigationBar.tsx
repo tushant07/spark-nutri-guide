@@ -2,6 +2,7 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { User, Camera, LineChart, Home, BarChart } from 'lucide-react';
 import { useUser } from '@/context/UserContext';
+import { UserButton } from '@clerk/clerk-react';
 
 const NavigationBar = () => {
   const navigate = useNavigate();
@@ -50,6 +51,17 @@ const NavigationBar = () => {
             <span className="nav-text">Insights</span>
           </button>
         )}
+        
+        <div className="flex items-center justify-center">
+          <UserButton 
+            afterSignOutUrl="/"
+            appearance={{
+              elements: {
+                userButtonAvatarBox: "w-6 h-6",
+              }
+            }}
+          />
+        </div>
       </div>
     </div>
   );

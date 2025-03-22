@@ -1,24 +1,31 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/context/UserContext';
+import { useAuth } from '@clerk/clerk-react';
 
 const Index = () => {
   const navigate = useNavigate();
   const { profile } = useUser();
+  const { isSignedIn } = useAuth();
   
   useEffect(() => {
-    // If profile is already created, redirect to meal-log page
-    if (profile.created) {
-      navigate('/meal-log');
-    } else {
-      // Otherwise redirect to profile creation
-      const timer = setTimeout(() => {
+    if (isSignedIn) {
+      // If profile is already created, redirect to meal-log page
+      if (profile.created) {
+        navigate('/meal-log');
+      } else {
+        // Otherwise redirect to profile creation
         navigate('/profile');
+      }
+    } else {
+      // If not signed in, redirect to sign-in after a short delay
+      const timer = setTimeout(() => {
+        navigate('/sign-in');
       }, 2000);
       
       return () => clearTimeout(timer);
     }
-  }, [navigate, profile.created]);
+  }, [navigate, profile.created, isSignedIn]);
   
   return (
     <div className="min-h-screen gradient-background flex flex-col items-center justify-center px-6">
