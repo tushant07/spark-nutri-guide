@@ -1,6 +1,6 @@
 
 import { useNavigate, useLocation } from 'react-router-dom';
-import { User, Camera, LineChart } from 'lucide-react';
+import { User, Camera, LineChart, Home } from 'lucide-react';
 import { useUser } from '@/context/UserContext';
 
 const NavigationBar = () => {
@@ -13,6 +13,16 @@ const NavigationBar = () => {
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white/70 backdrop-blur-xl border-t border-border p-2 animate-slide-up">
       <div className="max-w-md mx-auto flex justify-around items-center">
+        {profile.created && (
+          <button 
+            onClick={() => navigate('/dashboard')}
+            className={`nav-item ${isActive('/dashboard') ? 'active' : ''}`}
+          >
+            <Home size={22} className={isActive('/dashboard') ? 'text-spark-500' : 'text-gray-600'} />
+            <span className="nav-text">Dashboard</span>
+          </button>
+        )}
+        
         <button 
           onClick={() => navigate('/profile')}
           className={`nav-item ${isActive('/profile') ? 'active' : ''}`}

@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { Camera, Upload } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import NavigationBar from '@/components/NavigationBar';
 import MealAnalysis from '@/components/MealAnalysis';
@@ -9,6 +10,7 @@ import { useUser } from '@/context/UserContext';
 import { useToast } from '@/hooks/use-toast';
 
 const MealLog = () => {
+  const navigate = useNavigate();
   const { profile, totalCaloriesConsumed } = useUser();
   const { toast } = useToast();
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -39,6 +41,11 @@ const MealLog = () => {
       description: "Your nutrition data has been updated",
       duration: 3000,
     });
+    
+    // Redirect to dashboard after a short delay
+    setTimeout(() => {
+      navigate('/dashboard');
+    }, 1500);
   };
   
   return (

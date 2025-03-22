@@ -3,27 +3,28 @@ import { useUser } from '@/context/UserContext';
 
 const AIRecommendation = () => {
   const { profile, totalCaloriesConsumed } = useUser();
-  const { goal, dailyCalorieTarget = 2000 } = profile;
+  const { goal, gender, dailyCalorieTarget = 2000 } = profile;
   
   const getRecommendation = (): {text: string, snack: string} => {
     const remainingCalories = dailyCalorieTarget - totalCaloriesConsumed;
     
     if (!goal) return { text: "", snack: "" };
     
+    // Personalized recommendations based on gender and goal
     if (goal === 'Increase Weight') {
       return {
         text: `You've had ${totalCaloriesConsumed} kcal today. For your ${dailyCalorieTarget} kcal goal, try a 500 kcal snack:`,
-        snack: 'Peanut butter toast with banana'
+        snack: gender === 'Male' ? 'Peanut butter toast with banana and a protein shake' : 'Avocado toast with eggs and a fruit smoothie'
       };
     } else if (goal === 'Lose Weight') {
       return {
         text: `You've had ${totalCaloriesConsumed} kcal today. For your ${dailyCalorieTarget} kcal goal, try a 200 kcal snack:`,
-        snack: 'Apple with a few almonds'
+        snack: gender === 'Male' ? 'Apple with a few almonds' : 'Greek yogurt with berries'
       };
     } else if (goal === 'Build Muscle') {
       return {
         text: `You've had ${totalCaloriesConsumed} kcal today. For your ${dailyCalorieTarget} kcal goal, try a 300 kcal high-protein snack:`,
-        snack: 'Protein shake with oats'
+        snack: gender === 'Male' ? 'Protein shake with oats' : 'Cottage cheese with fruits and nuts'
       };
     }
     
