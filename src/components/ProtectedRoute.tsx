@@ -1,19 +1,21 @@
 
-import { useAuth, SignedOut, SignedIn } from "@clerk/clerk-react";
 import { Navigate, Outlet } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 
 interface ProtectedRouteProps {
   redirectTo?: string;
 }
 
 export const ProtectedRoute = ({ redirectTo = "/sign-in" }: ProtectedRouteProps) => {
-  const { isLoaded, isSignedIn } = useAuth();
+  const { user, loading } = useAuth();
   
-  if (!isLoaded) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center gradient-background">
+      <div className="w-8 h-8 border-4 border-spark-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>;
   }
   
-  if (!isSignedIn) {
+  if (!user) {
     return <Navigate to={redirectTo} replace />;
   }
   
@@ -21,13 +23,15 @@ export const ProtectedRoute = ({ redirectTo = "/sign-in" }: ProtectedRouteProps)
 };
 
 export const PublicOnly = ({ redirectTo = "/dashboard" }: ProtectedRouteProps) => {
-  const { isLoaded, isSignedIn } = useAuth();
+  const { user, loading } = useAuth();
   
-  if (!isLoaded) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center gradient-background">
+      <div className="w-8 h-8 border-4 border-spark-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>;
   }
   
-  if (isSignedIn) {
+  if (user) {
     return <Navigate to={redirectTo} replace />;
   }
   
