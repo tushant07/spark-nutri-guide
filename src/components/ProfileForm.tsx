@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/context/UserContext';
@@ -29,7 +28,6 @@ const ProfileForm = () => {
   });
   const [submitting, setSubmitting] = useState(false);
 
-  // Load existing profile data when component mounts
   useEffect(() => {
     if (profile.created && user) {
       setFormData({
@@ -89,7 +87,6 @@ const ProfileForm = () => {
       
       const dailyCalorieTarget = calculateCalorieTarget(goal, weight, gender);
       
-      // Save to Supabase
       const { error } = await supabase.from('profiles').upsert({
         id: user.id,
         age,
@@ -104,7 +101,6 @@ const ProfileForm = () => {
         throw error;
       }
       
-      // Update local state
       setProfile({
         age,
         weight,
@@ -122,10 +118,8 @@ const ProfileForm = () => {
           : "Your profile has been created successfully"
       });
       
-      // Navigate to dashboard if profile is being created for the first time
-      if (!profile.created) {
-        navigate('/dashboard');
-      }
+      navigate('/dashboard');
+      
     } catch (error: any) {
       toast({
         title: "Error saving profile",
@@ -155,7 +149,7 @@ const ProfileForm = () => {
               required
               placeholder="Enter your age"
               value={formData.age}
-              onChange={handleChange}
+              onChange={(e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))}
               className="form-input"
             />
           </div>
@@ -171,7 +165,7 @@ const ProfileForm = () => {
               required
               placeholder="Enter your weight in kg"
               value={formData.weight}
-              onChange={handleChange}
+              onChange={(e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))}
               className="form-input"
             />
           </div>
@@ -187,7 +181,7 @@ const ProfileForm = () => {
               required
               placeholder="Enter your height in cm"
               value={formData.height}
-              onChange={handleChange}
+              onChange={(e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))}
               className="form-input"
             />
           </div>
@@ -198,7 +192,7 @@ const ProfileForm = () => {
             </Label>
             <Select 
               value={formData.gender} 
-              onValueChange={(value) => handleSelectChange('gender', value)}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value }))}
               required
             >
               <SelectTrigger id="gender" className="form-input">
@@ -221,7 +215,7 @@ const ProfileForm = () => {
               name="goal"
               required
               value={formData.goal}
-              onChange={handleChange}
+              onChange={(e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))}
               className="form-input"
             >
               <option value="" disabled>Select your goal</option>

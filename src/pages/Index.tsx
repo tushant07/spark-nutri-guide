@@ -1,30 +1,33 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/context/UserContext';
+import { useAuth } from '@/context/AuthContext';
 
 const Index = () => {
   const navigate = useNavigate();
   const { profile } = useUser();
-  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+  const { user, loading } = useAuth();
   
   useEffect(() => {
-    if (isAuthenticated) {
-      // If profile is already created, redirect to meal-log page
-      if (profile.created) {
-        navigate('/meal-log');
+    if (!loading) {
+      if (user) {
+        // If profile is already created, redirect to dashboard
+        if (profile.created) {
+          navigate('/dashboard');
+        } else {
+          // Otherwise redirect to profile creation
+          navigate('/profile');
+        }
       } else {
-        // Otherwise redirect to profile creation
-        navigate('/profile');
+        // If not signed in, redirect to sign-in after a short delay
+        const timer = setTimeout(() => {
+          navigate('/sign-in');
+        }, 2000);
+        
+        return () => clearTimeout(timer);
       }
-    } else {
-      // If not signed in, redirect to sign-in after a short delay
-      const timer = setTimeout(() => {
-        navigate('/sign-in');
-      }, 2000);
-      
-      return () => clearTimeout(timer);
     }
-  }, [navigate, profile.created, isAuthenticated]);
+  }, [navigate, profile.created, user, loading]);
   
   return (
     <div className="min-h-screen gradient-background flex flex-col items-center justify-center px-6">

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import NavigationBar from '@/components/NavigationBar';
 
 const Profile = () => {
   const { signOut } = useAuth();
@@ -57,6 +58,8 @@ const Profile = () => {
           </Button>
         </div>
       </main>
+      
+      <NavigationBar />
     </div>
   );
 };
