@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/context/UserContext';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Select,
   SelectContent,
@@ -10,10 +12,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { useToast } from '@/hooks/use-toast';
 
 const ProfileForm = () => {
   const navigate = useNavigate();
   const { setProfile } = useUser();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
   const [formData, setFormData] = useState({
     age: '',
     weight: '',
@@ -47,12 +53,21 @@ const ProfileForm = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to create a profile",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setSubmitting(true);
     
-    // Simulate form processing
-    setTimeout(() => {
+    try {
       const age = parseInt(formData.age);
       const weight = parseInt(formData.weight);
       const height = parseInt(formData.height);
@@ -61,6 +76,22 @@ const ProfileForm = () => {
       
       const dailyCalorieTarget = calculateCalorieTarget(goal, weight, gender);
       
+      // Save to Supabase
+      const { error } = await supabase.from('profiles').upsert({
+        id: user.id,
+        age,
+        weight,
+        height,
+        gender,
+        goal,
+        daily_calorie_target: dailyCalorieTarget
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Update local state
       setProfile({
         age,
         weight,
@@ -71,9 +102,22 @@ const ProfileForm = () => {
         created: true,
       });
       
+      toast({
+        title: "Profile created",
+        description: "Your profile has been saved successfully"
+      });
+      
       navigate('/meal-log');
+    } catch (error: any) {
+      toast({
+        title: "Error saving profile",
+        description: error.message,
+        variant: "destructive"
+      });
+      console.error("Error saving profile:", error);
+    } finally {
       setSubmitting(false);
-    }, 800);
+    }
   };
 
   return (

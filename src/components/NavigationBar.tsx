@@ -2,16 +2,18 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { User, Camera, LineChart, Home, BarChart, LogOut } from 'lucide-react';
 import { useUser } from '@/context/UserContext';
+import { useAuth } from '@/context/AuthContext';
 
 const NavigationBar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { profile } = useUser();
+  const { signOut } = useAuth();
   
   const isActive = (path: string) => location.pathname === path;
   
-  const handleLogout = () => {
-    localStorage.removeItem('isAuthenticated');
+  const handleLogout = async () => {
+    await signOut();
     navigate('/sign-in');
   };
   

@@ -1,6 +1,9 @@
 
 import { useState } from 'react';
 import { useUser } from '@/context/UserContext';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface MealAnalysisProps {
   onLogMeal: () => void;
@@ -8,6 +11,8 @@ interface MealAnalysisProps {
 
 const MealAnalysis = ({ onLogMeal }: MealAnalysisProps) => {
   const { addMeal } = useUser();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [isLoggingMeal, setIsLoggingMeal] = useState(false);
   
   const mockMealData = {
@@ -18,18 +23,79 @@ const MealAnalysis = ({ onLogMeal }: MealAnalysisProps) => {
     fat: 15,
   };
   
-  const handleLogMeal = () => {
+  const handleLogMeal = async () => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to log a meal",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsLoggingMeal(true);
     
-    // Simulate network request
-    setTimeout(() => {
+    try {
+      // Save meal to Supabase
+      const { error } = await supabase.from('meal_logs').insert({
+        user_id: user.id,
+        name: mockMealData.name,
+        calories: mockMealData.calories,
+        protein: mockMealData.protein,
+        carbs: mockMealData.carbs,
+        fat: mockMealData.fat
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Update day's totals in daily_logs
+      const today = new Date();
+      const dateString = today.toISOString().split('T')[0]; // YYYY-MM-DD
+      const dayOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][today.getDay()];
+      
+      // Get existing daily log or create new one with upsert
+      const { error: upsertError } = await supabase.from('daily_logs').upsert({
+        user_id: user.id,
+        date: dateString,
+        day: dayOfWeek,
+        calories: mockMealData.calories,
+        protein: mockMealData.protein,
+        carbs: mockMealData.carbs,
+        fat: mockMealData.fat
+      }, {
+        onConflict: 'user_id,date',
+        ignoreDuplicates: false
+      });
+      
+      if (upsertError) {
+        console.error("Error updating daily log:", upsertError);
+        // Don't throw here, still consider the meal logged
+      }
+      
+      // Update local state
       addMeal({
         ...mockMealData,
         timestamp: new Date(),
       });
-      setIsLoggingMeal(false);
+      
+      toast({
+        title: "Meal logged",
+        description: "Your meal has been saved successfully"
+      });
+      
       onLogMeal();
-    }, 800);
+    } catch (error: any) {
+      toast({
+        title: "Error logging meal",
+        description: error.message,
+        variant: "destructive"
+      });
+      console.error("Error logging meal:", error);
+    } finally {
+      setIsLoggingMeal(false);
+    }
   };
   
   return (

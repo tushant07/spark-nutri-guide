@@ -1,5 +1,7 @@
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 
 type Goal = 'Increase Weight' | 'Lose Weight' | 'Build Muscle';
 type Gender = 'Male' | 'Female' | 'Other';
@@ -71,14 +73,97 @@ const generateMockWeeklyData = (): DailyData[] => {
 };
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
+  const { user } = useAuth();
+  const [profileLoading, setProfileLoading] = useState(true);
   const [profile, setProfile] = useState<UserProfile>({
     created: false,
   });
   
   const [loggedMeals, setLoggedMeals] = useState<LoggedMeal[]>([]);
-  
-  // Initialize with mock weekly data
   const [weeklyData, setWeeklyData] = useState<DailyData[]>(generateMockWeeklyData());
+
+  // Load profile data when user changes
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      if (!user) {
+        setProfileLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Error loading profile:', error);
+          return;
+        }
+
+        if (data) {
+          setProfile({
+            age: data.age,
+            weight: data.weight,
+            height: data.height,
+            gender: data.gender as Gender,
+            goal: data.goal as Goal,
+            dailyCalorieTarget: data.daily_calorie_target,
+            created: true,
+          });
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error);
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+
+    loadUserProfile();
+  }, [user]);
+
+  // Load today's meals when user changes
+  useEffect(() => {
+    const loadTodaysMeals = async () => {
+      if (!user) return;
+
+      try {
+        const today = new Date();
+        const startOfDay = new Date(today);
+        startOfDay.setHours(0, 0, 0, 0);
+        
+        const { data, error } = await supabase
+          .from('meal_logs')
+          .select('*')
+          .eq('user_id', user.id)
+          .gte('timestamp', startOfDay.toISOString())
+          .order('timestamp', { ascending: false });
+
+        if (error) {
+          console.error('Error loading meals:', error);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          const meals: LoggedMeal[] = data.map(meal => ({
+            name: meal.name,
+            calories: meal.calories,
+            protein: meal.protein,
+            carbs: meal.carbs,
+            fat: meal.fat,
+            timestamp: new Date(meal.timestamp),
+          }));
+          
+          setLoggedMeals(meals);
+        }
+      } catch (error) {
+        console.error('Error loading meals:', error);
+      }
+    };
+
+    loadTodaysMeals();
+  }, [user]);
 
   const addMeal = (meal: LoggedMeal) => {
     setLoggedMeals((prevMeals) => [...prevMeals, meal]);
