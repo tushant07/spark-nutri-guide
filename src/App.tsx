@@ -15,6 +15,7 @@ import NotFound from "./pages/NotFound";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import { TempAuthRoute } from "@/components/TempAuthRoute";
+import ProfileHeader from "@/components/ProfileHeader";
 
 const queryClient = new QueryClient();
 
@@ -34,10 +35,29 @@ const App = () => (
               
               {/* Temporarily protected routes - to be replaced with Supabase auth */}
               <Route element={<TempAuthRoute />}>
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/meal-log" element={<MealLog />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/weekly-insights" element={<WeeklyInsights />} />
+                <Route path="/profile" element={
+                  <>
+                    <Profile />
+                  </>
+                } />
+                <Route path="/meal-log" element={
+                  <>
+                    <ProfileHeader />
+                    <MealLog />
+                  </>
+                } />
+                <Route path="/dashboard" element={
+                  <>
+                    <ProfileHeader />
+                    <Dashboard />
+                  </>
+                } />
+                <Route path="/weekly-insights" element={
+                  <>
+                    <ProfileHeader />
+                    <WeeklyInsights />
+                  </>
+                } />
                 <Route path="/plan" element={<Navigate to="/dashboard" />} />
               </Route>
               

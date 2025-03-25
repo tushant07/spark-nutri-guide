@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/context/UserContext';
 import { useAuth } from '@/context/AuthContext';
@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const ProfileForm = () => {
   const navigate = useNavigate();
-  const { setProfile } = useUser();
+  const { profile, setProfile } = useUser();
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -28,6 +28,19 @@ const ProfileForm = () => {
     goal: '',
   });
   const [submitting, setSubmitting] = useState(false);
+
+  // Load existing profile data when component mounts
+  useEffect(() => {
+    if (profile.created && user) {
+      setFormData({
+        age: profile.age?.toString() || '',
+        weight: profile.weight?.toString() || '',
+        height: profile.height?.toString() || '',
+        gender: profile.gender || '',
+        goal: profile.goal || '',
+      });
+    }
+  }, [profile, user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -103,11 +116,16 @@ const ProfileForm = () => {
       });
       
       toast({
-        title: "Profile created",
-        description: "Your profile has been saved successfully"
+        title: profile.created ? "Profile updated" : "Profile created",
+        description: profile.created 
+          ? "Your profile has been updated successfully" 
+          : "Your profile has been created successfully"
       });
       
-      navigate('/meal-log');
+      // Navigate to dashboard if profile is being created for the first time
+      if (!profile.created) {
+        navigate('/dashboard');
+      }
     } catch (error: any) {
       toast({
         title: "Error saving profile",
@@ -119,6 +137,8 @@ const ProfileForm = () => {
       setSubmitting(false);
     }
   };
+
+  const buttonText = profile.created ? "Update Profile" : "Get Started";
 
   return (
     <div className="w-full max-w-md mx-auto animate-scale-in">
@@ -219,7 +239,7 @@ const ProfileForm = () => {
             {submitting ? (
               <div className="w-5 h-5 border-t-2 border-white rounded-full animate-spin"></div>
             ) : (
-              'Get Started'
+              buttonText
             )}
           </button>
         </form>

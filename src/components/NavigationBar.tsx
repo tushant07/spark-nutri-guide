@@ -12,11 +12,6 @@ const NavigationBar = () => {
   
   const isActive = (path: string) => location.pathname === path;
   
-  const handleLogout = async () => {
-    await signOut();
-    navigate('/sign-in');
-  };
-  
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white/70 backdrop-blur-xl border-t border-border p-2 animate-slide-up">
       <div className="max-w-md mx-auto flex justify-around items-center">
@@ -29,14 +24,6 @@ const NavigationBar = () => {
             <span className="nav-text">Dashboard</span>
           </button>
         )}
-        
-        <button 
-          onClick={() => navigate('/profile')}
-          className={`nav-item ${isActive('/profile') ? 'active' : ''}`}
-        >
-          <User size={22} className={isActive('/profile') ? 'text-spark-500' : 'text-gray-600'} />
-          <span className="nav-text">Profile</span>
-        </button>
         
         {profile.created && (
           <button 
@@ -57,14 +44,6 @@ const NavigationBar = () => {
             <span className="nav-text">Insights</span>
           </button>
         )}
-        
-        <button 
-          onClick={handleLogout}
-          className="nav-item"
-        >
-          <LogOut size={22} className="text-gray-600" />
-          <span className="nav-text">Logout</span>
-        </button>
       </div>
     </div>
   );
