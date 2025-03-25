@@ -11,7 +11,7 @@ const Header: React.FC = () => {
       case '/':
         return 'Spark';
       case '/profile':
-        return 'Create Profile';
+        return 'Profile';
       case '/meal-log':
         return 'Log Meal';
       default:
