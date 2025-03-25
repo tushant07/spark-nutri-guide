@@ -1,15 +1,14 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/context/UserContext';
-import { useAuth } from '@clerk/clerk-react';
 
 const Index = () => {
   const navigate = useNavigate();
   const { profile } = useUser();
-  const { isSignedIn } = useAuth();
+  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
   
   useEffect(() => {
-    if (isSignedIn) {
+    if (isAuthenticated) {
       // If profile is already created, redirect to meal-log page
       if (profile.created) {
         navigate('/meal-log');
@@ -25,7 +24,7 @@ const Index = () => {
       
       return () => clearTimeout(timer);
     }
-  }, [navigate, profile.created, isSignedIn]);
+  }, [navigate, profile.created, isAuthenticated]);
   
   return (
     <div className="min-h-screen gradient-background flex flex-col items-center justify-center px-6">

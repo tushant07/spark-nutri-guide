@@ -1,8 +1,7 @@
 
 import { useNavigate, useLocation } from 'react-router-dom';
-import { User, Camera, LineChart, Home, BarChart } from 'lucide-react';
+import { User, Camera, LineChart, Home, BarChart, LogOut } from 'lucide-react';
 import { useUser } from '@/context/UserContext';
-import { UserButton } from '@clerk/clerk-react';
 
 const NavigationBar = () => {
   const navigate = useNavigate();
@@ -10,6 +9,11 @@ const NavigationBar = () => {
   const { profile } = useUser();
   
   const isActive = (path: string) => location.pathname === path;
+  
+  const handleLogout = () => {
+    localStorage.removeItem('isAuthenticated');
+    navigate('/sign-in');
+  };
   
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white/70 backdrop-blur-xl border-t border-border p-2 animate-slide-up">
@@ -52,16 +56,13 @@ const NavigationBar = () => {
           </button>
         )}
         
-        <div className="flex items-center justify-center">
-          <UserButton 
-            afterSignOutUrl="/"
-            appearance={{
-              elements: {
-                userButtonAvatarBox: "w-6 h-6",
-              }
-            }}
-          />
-        </div>
+        <button 
+          onClick={handleLogout}
+          className="nav-item"
+        >
+          <LogOut size={22} className="text-gray-600" />
+          <span className="nav-text">Logout</span>
+        </button>
       </div>
     </div>
   );
