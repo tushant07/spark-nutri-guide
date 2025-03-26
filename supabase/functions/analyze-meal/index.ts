@@ -18,72 +18,101 @@ serve(async (req) => {
   }
 
   try {
-    const { imageUrl, userProfile } = await req.json();
+    let requestData;
+    try {
+      requestData = await req.json();
+    } catch (parseError) {
+      console.error('Error parsing request JSON:', parseError);
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Invalid JSON in request body' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { imageUrl, userProfile } = requestData;
 
     if (!imageUrl) {
       throw new Error('Image URL is required');
     }
 
+    console.log('Processing image:', imageUrl);
+    console.log('User profile:', userProfile);
+
     // Request to Grok API for food detection and analysis
-    const grokResponse = await fetch('https://api.grok.ai/v1/analyze-food', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${grokApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        image_url: imageUrl,
-        include_nutrition: true,
-      }),
-    });
+    try {
+      const grokResponse = await fetch('https://api.grok.ai/v1/analyze-food', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${grokApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image_url: imageUrl,
+          include_nutrition: true,
+        }),
+      });
 
-    if (!grokResponse.ok) {
-      const errorData = await grokResponse.text();
-      console.error('Grok API Error:', errorData);
-      throw new Error(`Grok API error: ${grokResponse.status}`);
-    }
+      if (!grokResponse.ok) {
+        const errorText = await grokResponse.text();
+        console.error('Grok API Error:', errorText);
+        throw new Error(`Grok API error: ${grokResponse.status} - ${errorText}`);
+      }
 
-    const foodData = await grokResponse.json();
-    
-    // If no food was detected or analysis is unreliable, throw an error
-    if (!foodData.food_name || !foodData.nutrition) {
-      throw new Error('Unable to identify food in the image. Please try again with a clearer photo.');
-    }
-    
-    // Generate personalized recommendation based on the food and user profile
-    let recommendation = null;
-    
-    if (userProfile && foodData) {
-      // Use the detected meal data to create a tailored recommendation
-      const { goal, dailyCalorieTarget, totalCaloriesConsumed } = userProfile;
+      let foodData;
+      try {
+        foodData = await grokResponse.json();
+        console.log('Food data from Grok:', JSON.stringify(foodData));
+      } catch (parseError) {
+        console.error('Error parsing Grok API response:', parseError);
+        throw new Error('Invalid response from Grok API');
+      }
       
-      const mealCalories = foodData.nutrition?.calories || 0;
-      const mealCarbs = foodData.nutrition?.carbs || 0;
-      const mealProtein = foodData.nutrition?.protein || 0;
-      const mealFat = foodData.nutrition?.fat || 0;
+      // Validate the food data
+      if (!foodData.food_name || !foodData.nutrition) {
+        throw new Error('Unable to identify food in the image. Please try again with a clearer photo.');
+      }
       
-      const remainingCalories = (dailyCalorieTarget || 2000) - totalCaloriesConsumed - mealCalories;
+      // Generate personalized recommendation based on the food and user profile
+      let recommendation = null;
       
-      // Generate recommendation based on user's goal and current nutritional status
-      recommendation = {
-        text: `Based on your ${goal} goal and this meal:`,
-        suggestion: generateSuggestion(goal, remainingCalories, mealCarbs, mealProtein, mealFat),
-        nutritionalBalance: assessNutritionalBalance(mealCarbs, mealProtein, mealFat, goal),
-      };
-    }
+      if (userProfile && foodData) {
+        // Use the detected meal data to create a tailored recommendation
+        const { goal, dailyCalorieTarget, totalCaloriesConsumed } = userProfile;
+        
+        const mealCalories = foodData.nutrition?.calories || 0;
+        const mealCarbs = foodData.nutrition?.carbs || 0;
+        const mealProtein = foodData.nutrition?.protein || 0;
+        const mealFat = foodData.nutrition?.fat || 0;
+        
+        const remainingCalories = (dailyCalorieTarget || 2000) - totalCaloriesConsumed - mealCalories;
+        
+        // Generate recommendation based on user's goal and current nutritional status
+        recommendation = {
+          text: `Based on your ${goal} goal and this meal:`,
+          suggestion: generateSuggestion(goal, remainingCalories, mealCarbs, mealProtein, mealFat),
+          nutritionalBalance: assessNutritionalBalance(mealCarbs, mealProtein, mealFat, goal),
+        };
+      }
 
-    return new Response(JSON.stringify({ 
-      success: true,
-      mealData: foodData,
-      recommendation
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+      return new Response(JSON.stringify({ 
+        success: true,
+        mealData: foodData,
+        recommendation
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } catch (grokError) {
+      console.error('Error calling Grok API:', grokError);
+      throw grokError;
+    }
   } catch (error) {
     console.error('Error in analyze-meal function:', error);
     return new Response(JSON.stringify({ 
       success: false, 
-      error: error.message 
+      error: error.message || 'Unknown error occurred' 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

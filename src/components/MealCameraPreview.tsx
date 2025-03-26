@@ -19,11 +19,14 @@ const MealCameraPreview = ({ onCapture, onCancel }: MealCameraPreviewProps) => {
     
     const startCamera = async () => {
       try {
+        // Try to get the highest quality camera feed available
         stream = await navigator.mediaDevices.getUserMedia({ 
           video: { 
             facingMode: 'environment',
             width: { ideal: 1920 },
-            height: { ideal: 1080 } 
+            height: { ideal: 1080 },
+            aspectRatio: { ideal: 1.7778 },
+            frameRate: { ideal: 30 }
           } 
         });
         
@@ -34,6 +37,23 @@ const MealCameraPreview = ({ onCapture, onCancel }: MealCameraPreviewProps) => {
       } catch (err: any) {
         console.error('Camera access error:', err);
         setError(err.message || 'Failed to access camera');
+        
+        // Try fallback to any available camera if the high-quality one failed
+        if (err.name === 'OverconstrainedError' || err.name === 'NotFoundError') {
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({ 
+              video: true
+            });
+            
+            if (videoRef.current) {
+              videoRef.current.srcObject = stream;
+              setStreamActive(true);
+            }
+          } catch (fallbackErr: any) {
+            console.error('Fallback camera access error:', fallbackErr);
+            setError(fallbackErr.message || 'Failed to access any camera');
+          }
+        }
       }
     };
     
@@ -42,7 +62,9 @@ const MealCameraPreview = ({ onCapture, onCancel }: MealCameraPreviewProps) => {
     // Cleanup function to stop the camera when component unmounts
     return () => {
       if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach(track => {
+          track.stop();
+        });
       }
     };
   }, []);
@@ -61,15 +83,24 @@ const MealCameraPreview = ({ onCapture, onCancel }: MealCameraPreviewProps) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
+    // Draw with a minor sharpening filter to improve food recognition
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.filter = 'contrast(1.1) saturate(1.2)';
+    
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     
     // Convert canvas to file with higher quality
     canvas.toBlob((blob) => {
       if (blob) {
-        const file = new File([blob], `meal-capture-${Date.now()}.jpeg`, { type: 'image/jpeg' });
+        const file = new File([blob], `meal-capture-${Date.now()}.jpeg`, { 
+          type: 'image/jpeg' 
+        });
         onCapture(file);
+      } else {
+        setError('Failed to capture image. Please try again.');
       }
-    }, 'image/jpeg', 0.95); // Increased quality for better analysis
+    }, 'image/jpeg', 0.95); // High quality for better analysis
   };
   
   return (
@@ -91,11 +122,11 @@ const MealCameraPreview = ({ onCapture, onCancel }: MealCameraPreviewProps) => {
           
           <canvas ref={canvasRef} className="hidden" />
           
-          <div className="absolute bottom-0 left-0 right-0 p-4 flex justify-between">
+          <div className="absolute bottom-0 left-0 right-0 p-4 flex justify-between bg-gradient-to-t from-black/70 to-transparent">
             <Button 
               variant="outline" 
               size="icon" 
-              className="rounded-full bg-white/80 backdrop-blur-sm hover:bg-white"
+              className="rounded-full bg-white/80 backdrop-blur-sm hover:bg-white text-black"
               onClick={onCancel}
             >
               <X className="h-5 w-5" />
@@ -104,12 +135,18 @@ const MealCameraPreview = ({ onCapture, onCancel }: MealCameraPreviewProps) => {
             <Button 
               variant="outline" 
               size="icon" 
-              className="rounded-full bg-white/80 backdrop-blur-sm hover:bg-white"
+              className="rounded-full bg-white/80 backdrop-blur-sm hover:bg-white text-black"
               onClick={handleCapture}
               disabled={!streamActive}
             >
               <Camera className="h-6 w-6" />
             </Button>
+          </div>
+          
+          <div className="absolute top-0 left-0 right-0 p-4 text-center">
+            <div className="inline-block px-3 py-1 bg-black/50 text-white text-sm rounded-full backdrop-blur-sm">
+              Position food in the center
+            </div>
           </div>
         </>
       )}

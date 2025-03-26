@@ -11,6 +11,7 @@ import { useUser } from '@/context/UserContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 const MealLog = () => {
   const navigate = useNavigate();
@@ -40,6 +41,7 @@ const MealLog = () => {
   const processImage = async (file: File) => {
     setUploadingPhoto(true);
     setAnalysisError(null);
+    setMealDetected(false); // Reset meal detection state
     
     try {
       toast({
@@ -64,61 +66,69 @@ const MealLog = () => {
         .getPublicUrl(fileName);
       
       const imageUrl = publicUrlData.publicUrl;
+      console.log("Image uploaded successfully, URL:", imageUrl);
       
       // 3. Call our edge function to analyze the meal
-      const response = await fetch('/api/analyze-meal', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          imageUrl,
-          userProfile: {
-            goal: profile.goal,
-            dailyCalorieTarget: profile.dailyCalorieTarget,
-            totalCaloriesConsumed,
-            gender: profile.gender
-          }
-        }),
-      });
-      
-      const responseData = await response.json();
-      
-      if (!responseData.success) {
-        throw new Error(responseData.error || 'Failed to analyze meal');
+      try {
+        const response = await supabase.functions.invoke('analyze-meal', {
+          body: {
+            imageUrl,
+            userProfile: {
+              goal: profile.goal,
+              dailyCalorieTarget: profile.dailyCalorieTarget,
+              totalCaloriesConsumed,
+              gender: profile.gender
+            }
+          },
+        });
+        
+        console.log("Analysis response:", response);
+        
+        if (!response.data || !response.data.success) {
+          throw new Error(response.error || response.data?.error || 'Failed to analyze meal');
+        }
+        
+        const { mealData: aiMealData, recommendation } = response.data;
+        
+        if (!aiMealData || !aiMealData.food_name) {
+          throw new Error('Unable to detect food in the image. Please try with a clearer photo.');
+        }
+        
+        // Process AI detected meal data
+        const detectedMeal = {
+          name: aiMealData.food_name || 'Unknown Food',
+          calories: aiMealData.nutrition?.calories || 0,
+          protein: aiMealData.nutrition?.protein || 0,
+          carbs: aiMealData.nutrition?.carbs || 0,
+          fat: aiMealData.nutrition?.fat || 0,
+        };
+        
+        setMealData(detectedMeal);
+        setAiRecommendation(recommendation);
+        setMealDetected(true);
+        
+        toast({
+          title: "Meal detected",
+          description: `Detected: ${detectedMeal.name}`,
+          duration: 3000,
+        });
+      } catch (apiError) {
+        console.error("API error:", apiError);
+        // Handle error from edge function
+        throw new Error(apiError.message || 'Error communicating with meal analysis service');
       }
-      
-      const { mealData: aiMealData, recommendation } = responseData;
-      
-      // Process AI detected meal data
-      const detectedMeal = {
-        name: aiMealData.food_name || 'Unknown Food',
-        calories: aiMealData.nutrition?.calories || 0,
-        protein: aiMealData.nutrition?.protein || 0,
-        carbs: aiMealData.nutrition?.carbs || 0,
-        fat: aiMealData.nutrition?.fat || 0,
-      };
-      
-      setMealData(detectedMeal);
-      setAiRecommendation(recommendation);
-      setMealDetected(true);
-      
-      toast({
-        title: "Meal detected",
-        description: `Detected: ${detectedMeal.name}`,
-        duration: 3000,
-      });
       
     } catch (error: any) {
       console.error("Error processing image:", error);
-      setAnalysisError(error.message);
+      setAnalysisError(error.message || "Please try again with a clearer photo of your food");
       toast({
         title: "Error analyzing meal",
-        description: "Please try again with a clearer photo of your food",
+        description: error.message || "Please try again with a clearer photo of your food",
         variant: "destructive"
       });
       
-      // Do not set default meal data on error
+      // Important: Don't set any default meal data on error
+      setMealData(null);
       setMealDetected(false);
     } finally {
       setUploadingPhoto(false);
@@ -126,6 +136,16 @@ const MealLog = () => {
   };
   
   const handleLogMeal = () => {
+    // Only allow logging if we have valid meal data
+    if (!mealData || mealData.calories <= 0) {
+      toast({
+        title: "Cannot log meal",
+        description: "No valid meal data detected",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setMealLogged(true);
     
     toast({
@@ -177,8 +197,11 @@ const MealLog = () => {
         
         {analysisError ? (
           <div className="glass-card rounded-xl p-6 animate-fade-in">
+            <Alert variant="destructive" className="mb-4">
+              <AlertTitle>Analysis Failed</AlertTitle>
+              <AlertDescription>{analysisError}</AlertDescription>
+            </Alert>
             <div className="flex flex-col items-center justify-center">
-              <p className="text-red-600 mb-4 text-center">{analysisError}</p>
               <p className="text-gray-700 mb-6 text-center">
                 Please try again with a clearer photo that shows your food clearly
               </p>
