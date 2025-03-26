@@ -45,6 +45,11 @@ serve(async (req) => {
 
     const foodData = await grokResponse.json();
     
+    // If no food was detected or analysis is unreliable, throw an error
+    if (!foodData.food_name || !foodData.nutrition) {
+      throw new Error('Unable to identify food in the image. Please try again with a clearer photo.');
+    }
+    
     // Generate personalized recommendation based on the food and user profile
     let recommendation = null;
     

@@ -22,6 +22,7 @@ const MealLog = () => {
   const [mealData, setMealData] = useState(null);
   const [aiRecommendation, setAiRecommendation] = useState(null);
   const [showCameraPreview, setShowCameraPreview] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -38,6 +39,7 @@ const MealLog = () => {
   
   const processImage = async (file: File) => {
     setUploadingPhoto(true);
+    setAnalysisError(null);
     
     try {
       toast({
@@ -52,7 +54,8 @@ const MealLog = () => {
         .upload(fileName, file);
       
       if (uploadError) {
-        throw uploadError;
+        console.error("Storage upload error:", uploadError);
+        throw new Error(`Failed to upload image: ${uploadError.message}`);
       }
       
       // 2. Get the public URL for the uploaded image
@@ -79,12 +82,13 @@ const MealLog = () => {
         }),
       });
       
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(`Failed to analyze meal: ${errorData}`);
+      const responseData = await response.json();
+      
+      if (!responseData.success) {
+        throw new Error(responseData.error || 'Failed to analyze meal');
       }
       
-      const { mealData: aiMealData, recommendation } = await response.json();
+      const { mealData: aiMealData, recommendation } = responseData;
       
       // Process AI detected meal data
       const detectedMeal = {
@@ -107,20 +111,15 @@ const MealLog = () => {
       
     } catch (error: any) {
       console.error("Error processing image:", error);
+      setAnalysisError(error.message);
       toast({
         title: "Error analyzing meal",
-        description: error.message,
+        description: "Please try again with a clearer photo of your food",
         variant: "destructive"
       });
-      // Fallback to mock data if AI analysis fails
-      setMealData({
-        name: 'Meal',
-        calories: 400,
-        protein: 30,
-        carbs: 10,
-        fat: 15,
-      });
-      setMealDetected(true);
+      
+      // Do not set default meal data on error
+      setMealDetected(false);
     } finally {
       setUploadingPhoto(false);
     }
@@ -139,6 +138,11 @@ const MealLog = () => {
     setTimeout(() => {
       navigate('/dashboard');
     }, 1500);
+  };
+  
+  const handleRetry = () => {
+    setAnalysisError(null);
+    setMealDetected(false);
   };
   
   return (
@@ -171,7 +175,19 @@ const MealLog = () => {
           </div>
         )}
         
-        {!mealDetected ? (
+        {analysisError ? (
+          <div className="glass-card rounded-xl p-6 animate-fade-in">
+            <div className="flex flex-col items-center justify-center">
+              <p className="text-red-600 mb-4 text-center">{analysisError}</p>
+              <p className="text-gray-700 mb-6 text-center">
+                Please try again with a clearer photo that shows your food clearly
+              </p>
+              <Button onClick={handleRetry} className="bg-spark-500 hover:bg-spark-600">
+                Try Again
+              </Button>
+            </div>
+          </div>
+        ) : !mealDetected ? (
           showCameraPreview ? (
             <div className="glass-card rounded-xl p-0 overflow-hidden">
               <MealCameraPreview 

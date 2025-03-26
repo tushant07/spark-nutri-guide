@@ -22,8 +22,8 @@ const MealCameraPreview = ({ onCapture, onCancel }: MealCameraPreviewProps) => {
         stream = await navigator.mediaDevices.getUserMedia({ 
           video: { 
             facingMode: 'environment',
-            width: { ideal: 1280 },
-            height: { ideal: 720 } 
+            width: { ideal: 1920 },
+            height: { ideal: 1080 } 
           } 
         });
         
@@ -53,7 +53,7 @@ const MealCameraPreview = ({ onCapture, onCancel }: MealCameraPreviewProps) => {
     const canvas = canvasRef.current;
     const video = videoRef.current;
     
-    // Set canvas dimensions to match video
+    // Set canvas dimensions to match video with high quality
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     
@@ -63,13 +63,13 @@ const MealCameraPreview = ({ onCapture, onCancel }: MealCameraPreviewProps) => {
     
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     
-    // Convert canvas to file
+    // Convert canvas to file with higher quality
     canvas.toBlob((blob) => {
       if (blob) {
         const file = new File([blob], `meal-capture-${Date.now()}.jpeg`, { type: 'image/jpeg' });
         onCapture(file);
       }
-    }, 'image/jpeg', 0.9);
+    }, 'image/jpeg', 0.95); // Increased quality for better analysis
   };
   
   return (

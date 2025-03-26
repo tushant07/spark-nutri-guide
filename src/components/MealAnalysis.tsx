@@ -25,13 +25,13 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
   const { toast } = useToast();
   const [isLoggingMeal, setIsLoggingMeal] = useState(false);
   
-  // Use provided meal data or fallback to mock data
+  // Use provided meal data or fallback to default values
   const currentMealData = mealData || {
-    name: 'Detected Meal',
-    calories: 400,
-    protein: 30,
-    carbs: 10,
-    fat: 15,
+    name: 'Unknown Meal',
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fat: 0,
   };
   
   const handleLogMeal = async () => {
@@ -144,11 +144,13 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
       
       <button
         onClick={handleLogMeal}
-        disabled={isLoggingMeal}
-        className="btn-primary w-full flex items-center justify-center"
+        disabled={isLoggingMeal || currentMealData.calories === 0}
+        className="btn-primary w-full flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isLoggingMeal ? (
           <Loader2 className="h-5 w-5 animate-spin" />
+        ) : currentMealData.calories === 0 ? (
+          'Unable to log (No data)'
         ) : (
           'Log Meal'
         )}
