@@ -1,39 +1,52 @@
 
 import { useUser } from '@/context/UserContext';
 
-const AIRecommendation = () => {
+interface AIRecommendationProps {
+  recommendation?: {
+    text: string;
+    suggestion: string;
+    nutritionalBalance: string;
+  };
+}
+
+const AIRecommendation = ({ recommendation }: AIRecommendationProps) => {
   const { profile, totalCaloriesConsumed } = useUser();
-  const { goal, gender, dailyCalorieTarget = 2000 } = profile;
+  const { dailyCalorieTarget = 2000 } = profile;
   
-  const getRecommendation = (): {text: string, snack: string} => {
+  // If we have an AI recommendation, use it, otherwise generate a default
+  const getDefaultRecommendation = (): {text: string, suggestion: string, nutritionalBalance: string} => {
+    const { goal, gender } = profile;
     const remainingCalories = dailyCalorieTarget - totalCaloriesConsumed;
     
-    if (!goal) return { text: "", snack: "" };
+    if (!goal) return { text: "", suggestion: "", nutritionalBalance: "" };
     
     // Personalized recommendations based on gender and goal
     if (goal === 'Increase Weight') {
       return {
-        text: `You've had ${totalCaloriesConsumed} kcal today. For your ${dailyCalorieTarget} kcal goal, try a 500 kcal snack:`,
-        snack: gender === 'Male' ? 'Peanut butter toast with banana and a protein shake' : 'Avocado toast with eggs and a fruit smoothie'
+        text: `You've had ${totalCaloriesConsumed} kcal today. For your ${dailyCalorieTarget} kcal goal:`,
+        suggestion: gender === 'Male' ? 'Peanut butter toast with banana and a protein shake' : 'Avocado toast with eggs and a fruit smoothie',
+        nutritionalBalance: "Try to increase your overall calorie intake while maintaining a good balance of protein, carbs, and fats."
       };
     } else if (goal === 'Lose Weight') {
       return {
-        text: `You've had ${totalCaloriesConsumed} kcal today. For your ${dailyCalorieTarget} kcal goal, try a 200 kcal snack:`,
-        snack: gender === 'Male' ? 'Apple with a few almonds' : 'Greek yogurt with berries'
+        text: `You've had ${totalCaloriesConsumed} kcal today. For your ${dailyCalorieTarget} kcal goal:`,
+        suggestion: gender === 'Male' ? 'Apple with a few almonds' : 'Greek yogurt with berries',
+        nutritionalBalance: "Focus on protein-rich foods and vegetables to stay full while maintaining a calorie deficit."
       };
     } else if (goal === 'Build Muscle') {
       return {
-        text: `You've had ${totalCaloriesConsumed} kcal today. For your ${dailyCalorieTarget} kcal goal, try a 300 kcal high-protein snack:`,
-        snack: gender === 'Male' ? 'Protein shake with oats' : 'Cottage cheese with fruits and nuts'
+        text: `You've had ${totalCaloriesConsumed} kcal today. For your ${dailyCalorieTarget} kcal goal:`,
+        suggestion: gender === 'Male' ? 'Protein shake with oats' : 'Cottage cheese with fruits and nuts',
+        nutritionalBalance: "Prioritize protein intake and ensure you're getting enough calories to support muscle growth."
       };
     }
     
-    return { text: "", snack: "" };
+    return { text: "", suggestion: "", nutritionalBalance: "" };
   };
   
-  const recommendation = getRecommendation();
+  const finalRecommendation = recommendation || getDefaultRecommendation();
   
-  if (!recommendation.text) return null;
+  if (!finalRecommendation.text) return null;
   
   return (
     <div className="glass-card rounded-xl p-6 animate-scale-in">
@@ -42,10 +55,14 @@ const AIRecommendation = () => {
         <h3 className="text-sm font-medium text-gray-500">AI RECOMMENDATION</h3>
       </div>
       
-      <p className="text-gray-800 mb-3">{recommendation.text}</p>
+      <p className="text-gray-800 mb-3">{finalRecommendation.text}</p>
       
       <div className="bg-white rounded-lg p-4 border border-spark-100">
-        <p className="font-medium text-spark-800">{recommendation.snack}</p>
+        <p className="font-medium text-spark-800">{finalRecommendation.suggestion}</p>
+      </div>
+      
+      <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
+        <p className="text-sm text-gray-700">{finalRecommendation.nutritionalBalance}</p>
       </div>
       
       <div className="mt-4 pt-4 border-t border-gray-100">

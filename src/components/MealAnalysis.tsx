@@ -4,19 +4,30 @@ import { useUser } from '@/context/UserContext';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
+
+interface MealData {
+  name: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
 
 interface MealAnalysisProps {
+  mealData?: MealData;
   onLogMeal: () => void;
 }
 
-const MealAnalysis = ({ onLogMeal }: MealAnalysisProps) => {
+const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
   const { addMeal } = useUser();
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLoggingMeal, setIsLoggingMeal] = useState(false);
   
-  const mockMealData = {
-    name: 'Grilled Chicken',
+  // Use provided meal data or fallback to mock data
+  const currentMealData = mealData || {
+    name: 'Detected Meal',
     calories: 400,
     protein: 30,
     carbs: 10,
@@ -39,11 +50,11 @@ const MealAnalysis = ({ onLogMeal }: MealAnalysisProps) => {
       // Save meal to Supabase
       const { error } = await supabase.from('meal_logs').insert({
         user_id: user.id,
-        name: mockMealData.name,
-        calories: mockMealData.calories,
-        protein: mockMealData.protein,
-        carbs: mockMealData.carbs,
-        fat: mockMealData.fat
+        name: currentMealData.name,
+        calories: currentMealData.calories,
+        protein: currentMealData.protein,
+        carbs: currentMealData.carbs,
+        fat: currentMealData.fat
       });
       
       if (error) {
@@ -60,10 +71,10 @@ const MealAnalysis = ({ onLogMeal }: MealAnalysisProps) => {
         user_id: user.id,
         date: dateString,
         day: dayOfWeek,
-        calories: mockMealData.calories,
-        protein: mockMealData.protein,
-        carbs: mockMealData.carbs,
-        fat: mockMealData.fat
+        calories: currentMealData.calories,
+        protein: currentMealData.protein,
+        carbs: currentMealData.carbs,
+        fat: currentMealData.fat
       }, {
         onConflict: 'user_id,date',
         ignoreDuplicates: false
@@ -76,7 +87,7 @@ const MealAnalysis = ({ onLogMeal }: MealAnalysisProps) => {
       
       // Update local state
       addMeal({
-        ...mockMealData,
+        ...currentMealData,
         timestamp: new Date(),
       });
       
@@ -106,28 +117,28 @@ const MealAnalysis = ({ onLogMeal }: MealAnalysisProps) => {
       </div>
       
       <h2 className="text-xl font-semibold mb-4 text-gray-800">
-        {mockMealData.name}
+        {currentMealData.name}
       </h2>
       
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="bg-white rounded-lg p-3 border border-spark-100">
           <p className="text-sm text-gray-500 mb-1">Calories</p>
-          <p className="text-xl font-medium text-gray-800">{mockMealData.calories} kcal</p>
+          <p className="text-xl font-medium text-gray-800">{currentMealData.calories} kcal</p>
         </div>
         
         <div className="bg-white rounded-lg p-3 border border-spark-100">
           <p className="text-sm text-gray-500 mb-1">Protein</p>
-          <p className="text-xl font-medium text-gray-800">{mockMealData.protein}g</p>
+          <p className="text-xl font-medium text-gray-800">{currentMealData.protein}g</p>
         </div>
         
         <div className="bg-white rounded-lg p-3 border border-spark-100">
           <p className="text-sm text-gray-500 mb-1">Carbs</p>
-          <p className="text-xl font-medium text-gray-800">{mockMealData.carbs}g</p>
+          <p className="text-xl font-medium text-gray-800">{currentMealData.carbs}g</p>
         </div>
         
         <div className="bg-white rounded-lg p-3 border border-spark-100">
           <p className="text-sm text-gray-500 mb-1">Fat</p>
-          <p className="text-xl font-medium text-gray-800">{mockMealData.fat}g</p>
+          <p className="text-xl font-medium text-gray-800">{currentMealData.fat}g</p>
         </div>
       </div>
       
@@ -137,7 +148,7 @@ const MealAnalysis = ({ onLogMeal }: MealAnalysisProps) => {
         className="btn-primary w-full flex items-center justify-center"
       >
         {isLoggingMeal ? (
-          <div className="w-5 h-5 border-t-2 border-white rounded-full animate-spin"></div>
+          <Loader2 className="h-5 w-5 animate-spin" />
         ) : (
           'Log Meal'
         )}

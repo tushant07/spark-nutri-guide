@@ -1,6 +1,6 @@
 
-import { useState } from 'react';
-import { Camera, Upload } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Camera, Upload, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import NavigationBar from '@/components/NavigationBar';
@@ -8,6 +8,7 @@ import MealAnalysis from '@/components/MealAnalysis';
 import AIRecommendation from '@/components/AIRecommendation';
 import { useUser } from '@/context/UserContext';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const MealLog = () => {
   const navigate = useNavigate();
@@ -16,21 +17,111 @@ const MealLog = () => {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [mealDetected, setMealDetected] = useState(false);
   const [mealLogged, setMealLogged] = useState(false);
+  const [mealData, setMealData] = useState(null);
+  const [aiRecommendation, setAiRecommendation] = useState(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const handleUploadPhoto = () => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    await processImage(file);
+  };
+  
+  const handleCameraCapture = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+  
+  const processImage = async (file: File) => {
     setUploadingPhoto(true);
     
-    // Simulate photo upload and processing
-    setTimeout(() => {
-      setUploadingPhoto(false);
+    try {
+      toast({
+        title: "Processing image",
+        description: "Analyzing your meal photo with AI",
+      });
+      
+      // 1. Upload image to Supabase storage
+      const fileName = `meal-${Date.now()}-${file.name}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('meal-images')
+        .upload(fileName, file);
+      
+      if (uploadError) {
+        throw uploadError;
+      }
+      
+      // 2. Get the public URL for the uploaded image
+      const { data: publicUrlData } = supabase.storage
+        .from('meal-images')
+        .getPublicUrl(fileName);
+      
+      const imageUrl = publicUrlData.publicUrl;
+      
+      // 3. Call our edge function to analyze the meal
+      const response = await fetch('/api/analyze-meal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          imageUrl,
+          userProfile: {
+            goal: profile.goal,
+            dailyCalorieTarget: profile.dailyCalorieTarget,
+            totalCaloriesConsumed,
+            gender: profile.gender
+          }
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Failed to analyze meal: ${errorData}`);
+      }
+      
+      const { mealData: aiMealData, recommendation } = await response.json();
+      
+      // Process AI detected meal data
+      const detectedMeal = {
+        name: aiMealData.food_name || 'Unknown Food',
+        calories: aiMealData.nutrition?.calories || 0,
+        protein: aiMealData.nutrition?.protein || 0,
+        carbs: aiMealData.nutrition?.carbs || 0,
+        fat: aiMealData.nutrition?.fat || 0,
+      };
+      
+      setMealData(detectedMeal);
+      setAiRecommendation(recommendation);
       setMealDetected(true);
       
       toast({
         title: "Meal detected",
-        description: "We've analyzed your meal photo",
+        description: `Detected: ${detectedMeal.name}`,
         duration: 3000,
       });
-    }, 1500);
+      
+    } catch (error: any) {
+      console.error("Error processing image:", error);
+      toast({
+        title: "Error analyzing meal",
+        description: error.message,
+        variant: "destructive"
+      });
+      // Fallback to mock data if AI analysis fails
+      setMealData({
+        name: 'Meal',
+        calories: 400,
+        protein: 30,
+        carbs: 10,
+        fat: 15,
+      });
+      setMealDetected(true);
+    } finally {
+      setUploadingPhoto(false);
+    }
   };
   
   const handleLogMeal = () => {
@@ -88,14 +179,23 @@ const MealLog = () => {
               Upload a photo of your meal or take a picture to get nutritional information
             </p>
             
+            <input 
+              type="file" 
+              ref={fileInputRef}
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+              capture="environment"
+            />
+            
             <div className="flex gap-4">
               <button
-                onClick={handleUploadPhoto}
+                onClick={() => fileInputRef.current?.click()}
                 disabled={uploadingPhoto}
                 className="btn-primary flex items-center gap-2"
               >
                 {uploadingPhoto ? (
-                  <div className="w-5 h-5 border-t-2 border-white rounded-full animate-spin"></div>
+                  <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
                   <>
                     <Upload size={18} />
@@ -105,12 +205,12 @@ const MealLog = () => {
               </button>
               
               <button
-                onClick={handleUploadPhoto}
+                onClick={handleCameraCapture}
                 disabled={uploadingPhoto}
                 className="btn-secondary flex items-center gap-2"
               >
                 {uploadingPhoto ? (
-                  <div className="w-5 h-5 border-t-2 border-gray-600 rounded-full animate-spin"></div>
+                  <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
                   <>
                     <Camera size={18} />
@@ -122,11 +222,14 @@ const MealLog = () => {
           </div>
         ) : (
           <>
-            <MealAnalysis onLogMeal={handleLogMeal} />
+            <MealAnalysis 
+              mealData={mealData} 
+              onLogMeal={handleLogMeal} 
+            />
             
-            {mealLogged && (
+            {mealLogged && aiRecommendation && (
               <div className="mt-6">
-                <AIRecommendation />
+                <AIRecommendation recommendation={aiRecommendation} />
               </div>
             )}
           </>
