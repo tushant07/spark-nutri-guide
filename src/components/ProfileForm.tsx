@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/context/UserContext';
@@ -118,7 +119,8 @@ const ProfileForm = () => {
           : "Your profile has been created successfully"
       });
       
-      navigate('/dashboard');
+      console.log("Profile saved successfully, redirecting to dashboard");
+      setTimeout(() => navigate('/dashboard'), 100);
       
     } catch (error: any) {
       toast({

@@ -10,17 +10,22 @@ const Index = () => {
   
   useEffect(() => {
     if (!loading) {
+      console.log("Index page - Auth state:", { user: !!user, profileCreated: profile.created });
+      
       if (user) {
         // If profile is already created, redirect to dashboard
         if (profile.created) {
+          console.log("User with profile detected, navigating to dashboard");
           navigate('/dashboard');
         } else {
           // Otherwise redirect to profile creation
+          console.log("User without profile detected, navigating to profile creation");
           navigate('/profile');
         }
       } else {
         // If not signed in, redirect to sign-in after a short delay
         const timer = setTimeout(() => {
+          console.log("No user detected, navigating to sign-in");
           navigate('/sign-in');
         }, 2000);
         

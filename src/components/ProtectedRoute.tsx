@@ -26,6 +26,7 @@ export const ProtectedRoute = ({ redirectTo = "/sign-in" }: ProtectedRouteProps)
   
   // If user hasn't completed profile setup and isn't on the profile page, redirect to profile
   if (!profile.created && location.pathname !== "/profile") {
+    console.log("User hasn't completed profile, redirecting to profile page");
     return <Navigate to="/profile" replace />;
   }
   
@@ -47,8 +48,10 @@ export const PublicOnly = ({ redirectTo = "/dashboard" }: ProtectedRouteProps) =
   if (user) {
     // If profile is created, navigate to dashboard, otherwise to profile
     if (profile.created) {
+      console.log("User logged in with profile, redirecting to dashboard");
       return <Navigate to={redirectTo} replace />;
     } else {
+      console.log("User logged in without profile, redirecting to profile");
       return <Navigate to="/profile" replace />;
     }
   }
