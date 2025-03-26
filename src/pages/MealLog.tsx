@@ -6,9 +6,11 @@ import Header from '@/components/Header';
 import NavigationBar from '@/components/NavigationBar';
 import MealAnalysis from '@/components/MealAnalysis';
 import AIRecommendation from '@/components/AIRecommendation';
+import MealCameraPreview from '@/components/MealCameraPreview';
 import { useUser } from '@/context/UserContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
 
 const MealLog = () => {
   const navigate = useNavigate();
@@ -19,6 +21,7 @@ const MealLog = () => {
   const [mealLogged, setMealLogged] = useState(false);
   const [mealData, setMealData] = useState(null);
   const [aiRecommendation, setAiRecommendation] = useState(null);
+  const [showCameraPreview, setShowCameraPreview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -28,10 +31,9 @@ const MealLog = () => {
     await processImage(file);
   };
   
-  const handleCameraCapture = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
+  const handleCameraCapture = (file: File) => {
+    setShowCameraPreview(false);
+    processImage(file);
   };
   
   const processImage = async (file: File) => {
@@ -170,56 +172,66 @@ const MealLog = () => {
         )}
         
         {!mealDetected ? (
-          <div className="glass-card rounded-xl p-6 flex flex-col items-center justify-center text-center h-64 animate-scale-in">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">
-              Log your meal
-            </h2>
-            
-            <p className="text-gray-600 mb-6">
-              Upload a photo of your meal or take a picture to get nutritional information
-            </p>
-            
-            <input 
-              type="file" 
-              ref={fileInputRef}
-              accept="image/*"
-              onChange={handleFileSelect}
-              className="hidden"
-              capture="environment"
-            />
-            
-            <div className="flex gap-4">
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingPhoto}
-                className="btn-primary flex items-center gap-2"
-              >
-                {uploadingPhoto ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <>
-                    <Upload size={18} />
-                    <span>Upload</span>
-                  </>
-                )}
-              </button>
-              
-              <button
-                onClick={handleCameraCapture}
-                disabled={uploadingPhoto}
-                className="btn-secondary flex items-center gap-2"
-              >
-                {uploadingPhoto ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <>
-                    <Camera size={18} />
-                    <span>Take Photo</span>
-                  </>
-                )}
-              </button>
+          showCameraPreview ? (
+            <div className="glass-card rounded-xl p-0 overflow-hidden">
+              <MealCameraPreview 
+                onCapture={handleCameraCapture}
+                onCancel={() => setShowCameraPreview(false)}
+              />
             </div>
-          </div>
+          ) : (
+            <div className="glass-card rounded-xl p-6 flex flex-col items-center justify-center text-center h-64 animate-scale-in">
+              <h2 className="text-xl font-semibold mb-4 text-gray-800">
+                Log your meal
+              </h2>
+              
+              <p className="text-gray-600 mb-6">
+                Take a picture of your meal to get nutritional information
+              </p>
+              
+              <input 
+                type="file" 
+                ref={fileInputRef}
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              
+              <div className="flex gap-4">
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingPhoto}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  {uploadingPhoto ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <>
+                      <Upload size={18} />
+                      <span>Upload</span>
+                    </>
+                  )}
+                </Button>
+                
+                <Button
+                  onClick={() => setShowCameraPreview(true)}
+                  disabled={uploadingPhoto}
+                  variant="default"
+                  className="flex items-center gap-2 bg-spark-500 hover:bg-spark-600"
+                >
+                  {uploadingPhoto ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <>
+                      <Camera size={18} />
+                      <span>Camera</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )
         ) : (
           <>
             <MealAnalysis 
