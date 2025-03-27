@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const xaiApiKey = Deno.env.get('XAI_API_KEY');
@@ -55,117 +54,257 @@ serve(async (req) => {
         throw new Error('XAI_API_KEY environment variable is not set');
       }
 
-      // Use the x.ai API format with the grok-2-vision-latest model
-      const xaiResponse = await fetch('https://api.x.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${xaiApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: "grok-2-vision-latest",
-          messages: [
-            {
-              role: "system",
-              content: "You are a nutrition expert that analyzes food images. Respond with ONLY a valid JSON object containing: food_name (string), nutrition: { calories (number), protein (g, number), carbs (g, number), fat (g, number) }. No text before or after the JSON."
-            },
-            {
-              role: "user",
-              content: [
-                {
-                  type: "image_url",
-                  image_url: {
-                    url: imageUrl,
-                    detail: "high",
+      // First download the image from Supabase storage to check and convert format if needed
+      const imageResponse = await fetch(imageUrl);
+      if (!imageResponse.ok) {
+        throw new Error(`Failed to fetch image from URL: ${imageResponse.status} ${imageResponse.statusText}`);
+      }
+
+      // Get the content type from the response headers
+      const contentType = imageResponse.headers.get('content-type');
+      console.log('Original image content type:', contentType);
+
+      // Check if content type is supported
+      const supportedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+      if (!contentType || !supportedTypes.includes(contentType)) {
+        console.log('Converting image to supported format...');
+        
+        // Get the image as blob
+        const imageBlob = await imageResponse.blob();
+        
+        // Create a new URL from the blob for the API
+        const formData = new FormData();
+        formData.append('file', imageBlob, 'food_image.jpg');
+        
+        // Use a temporary URL for the converted image
+        const imageArrayBuffer = await imageBlob.arrayBuffer();
+        const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageArrayBuffer)));
+        const dataUrl = `data:image/jpeg;base64,${base64Image}`;
+        
+        // Now use the data URL for the vision API
+        const xaiResponse = await fetch('https://api.x.ai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${xaiApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: "grok-2-vision-latest",
+            messages: [
+              {
+                role: "system",
+                content: "You are a nutrition expert that analyzes food images. Respond with ONLY a valid JSON object containing: food_name (string), nutrition: { calories (number), protein (g, number), carbs (g, number), fat (g, number) }. No text before or after the JSON."
+              },
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "image_url",
+                    image_url: {
+                      url: dataUrl,
+                      detail: "high",
+                    },
                   },
-                },
-                {
-                  type: "text",
-                  text: "Analyze this food image and provide the food name, calories, protein, carbs, and fat content in JSON format."
-                },
-              ],
-            },
-          ],
-        }),
-      });
+                  {
+                    type: "text",
+                    text: "Analyze this food image and provide the food name, calories, protein, carbs, and fat content in JSON format."
+                  },
+                ],
+              },
+            ],
+          }),
+        });
+        
+        // Rest of processing remains the same
+        if (!xaiResponse.ok) {
+          let errorText = '';
+          try {
+            const errorJson = await xaiResponse.json();
+            errorText = JSON.stringify(errorJson);
+          } catch {
+            errorText = await xaiResponse.text();
+          }
+          
+          console.error('x.ai API Error:', errorText);
+          throw new Error(`x.ai API error: ${xaiResponse.status} - ${errorText}`);
+        }
 
-      // Check if the request was successful
-      if (!xaiResponse.ok) {
-        let errorText = '';
+        // Parse the response
+        const xaiData = await xaiResponse.json();
+        console.log('Raw response from x.ai:', JSON.stringify(xaiData, null, 2));
+        
+        // Extract the AI's response content
+        const responseContent = xaiData.choices[0].message.content;
+        console.log('AI response content:', responseContent);
+        
+        // Parse the JSON from the response
+        let foodData;
         try {
-          const errorJson = await xaiResponse.json();
-          errorText = JSON.stringify(errorJson);
-        } catch {
-          errorText = await xaiResponse.text();
+          // Find JSON in the response - sometimes the AI might wrap it in ```json and ```
+          let jsonContent = responseContent;
+          
+          // Remove markdown code blocks if present
+          if (jsonContent.includes('```json')) {
+            jsonContent = jsonContent.split('```json')[1].split('```')[0].trim();
+          } else if (jsonContent.includes('```')) {
+            jsonContent = jsonContent.split('```')[1].split('```')[0].trim();
+          }
+          
+          foodData = JSON.parse(jsonContent);
+          console.log('Parsed food data:', JSON.stringify(foodData, null, 2));
+        } catch (jsonError) {
+          console.error('Error parsing food data JSON:', jsonError, 'Raw content:', responseContent);
+          throw new Error('Could not parse food data from AI response');
         }
         
-        console.error('x.ai API Error:', errorText);
-        throw new Error(`x.ai API error: ${xaiResponse.status} - ${errorText}`);
-      }
-
-      // Parse the response
-      const xaiData = await xaiResponse.json();
-      console.log('Raw response from x.ai:', JSON.stringify(xaiData, null, 2));
-      
-      // Extract the AI's response content
-      const responseContent = xaiData.choices[0].message.content;
-      console.log('AI response content:', responseContent);
-      
-      // Parse the JSON from the response
-      let foodData;
-      try {
-        // Find JSON in the response - sometimes the AI might wrap it in ```json and ```
-        let jsonContent = responseContent;
-        
-        // Remove markdown code blocks if present
-        if (jsonContent.includes('```json')) {
-          jsonContent = jsonContent.split('```json')[1].split('```')[0].trim();
-        } else if (jsonContent.includes('```')) {
-          jsonContent = jsonContent.split('```')[1].split('```')[0].trim();
+        // Validate the food data
+        if (!foodData.food_name || !foodData.nutrition) {
+          console.error('Invalid food data structure:', foodData);
+          throw new Error('Unable to identify food in the image. Please try again with a clearer photo.');
         }
         
-        foodData = JSON.parse(jsonContent);
-        console.log('Parsed food data:', JSON.stringify(foodData, null, 2));
-      } catch (jsonError) {
-        console.error('Error parsing food data JSON:', jsonError, 'Raw content:', responseContent);
-        throw new Error('Could not parse food data from AI response');
-      }
-      
-      // Validate the food data
-      if (!foodData.food_name || !foodData.nutrition) {
-        console.error('Invalid food data structure:', foodData);
-        throw new Error('Unable to identify food in the image. Please try again with a clearer photo.');
-      }
-      
-      // Generate personalized recommendation based on the food and user profile
-      let recommendation = null;
-      
-      if (userProfile && foodData) {
-        // Use the detected meal data to create a tailored recommendation
-        const { goal, dailyCalorieTarget, totalCaloriesConsumed } = userProfile;
+        // Generate personalized recommendation based on the food and user profile
+        let recommendation = null;
         
-        const mealCalories = foodData.nutrition?.calories || 0;
-        const mealCarbs = foodData.nutrition?.carbs || 0;
-        const mealProtein = foodData.nutrition?.protein || 0;
-        const mealFat = foodData.nutrition?.fat || 0;
-        
-        const remainingCalories = (dailyCalorieTarget || 2000) - totalCaloriesConsumed - mealCalories;
-        
-        // Generate recommendation based on user's goal and current nutritional status
-        recommendation = {
-          text: `Based on your ${goal} goal and this meal:`,
-          suggestion: generateSuggestion(goal, remainingCalories, mealCarbs, mealProtein, mealFat),
-          nutritionalBalance: assessNutritionalBalance(mealCarbs, mealProtein, mealFat, goal),
-        };
-      }
+        if (userProfile && foodData) {
+          // Use the detected meal data to create a tailored recommendation
+          const { goal, dailyCalorieTarget, totalCaloriesConsumed } = userProfile;
+          
+          const mealCalories = foodData.nutrition?.calories || 0;
+          const mealCarbs = foodData.nutrition?.carbs || 0;
+          const mealProtein = foodData.nutrition?.protein || 0;
+          const mealFat = foodData.nutrition?.fat || 0;
+          
+          const remainingCalories = (dailyCalorieTarget || 2000) - totalCaloriesConsumed - mealCalories;
+          
+          // Generate recommendation based on user's goal and current nutritional status
+          recommendation = {
+            text: `Based on your ${goal} goal and this meal:`,
+            suggestion: generateSuggestion(goal, remainingCalories, mealCarbs, mealProtein, mealFat),
+            nutritionalBalance: assessNutritionalBalance(mealCarbs, mealProtein, mealFat, goal),
+          };
+        }
 
-      return new Response(JSON.stringify({ 
-        success: true,
-        mealData: foodData,
-        recommendation
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+        return new Response(JSON.stringify({ 
+          success: true,
+          mealData: foodData,
+          recommendation
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } else {
+        // If content type is already supported, proceed with original URL
+        const xaiResponse = await fetch('https://api.x.ai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${xaiApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: "grok-2-vision-latest",
+            messages: [
+              {
+                role: "system",
+                content: "You are a nutrition expert that analyzes food images. Respond with ONLY a valid JSON object containing: food_name (string), nutrition: { calories (number), protein (g, number), carbs (g, number), fat (g, number) }. No text before or after the JSON."
+              },
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "image_url",
+                    image_url: {
+                      url: imageUrl,
+                      detail: "high",
+                    },
+                  },
+                  {
+                    type: "text",
+                    text: "Analyze this food image and provide the food name, calories, protein, carbs, and fat content in JSON format."
+                  },
+                ],
+              },
+            ],
+          }),
+        });
+
+        // Check if the request was successful
+        if (!xaiResponse.ok) {
+          let errorText = '';
+          try {
+            const errorJson = await xaiResponse.json();
+            errorText = JSON.stringify(errorJson);
+          } catch {
+            errorText = await xaiResponse.text();
+          }
+          
+          console.error('x.ai API Error:', errorText);
+          throw new Error(`x.ai API error: ${xaiResponse.status} - ${errorText}`);
+        }
+
+        // Parse the response
+        const xaiData = await xaiResponse.json();
+        console.log('Raw response from x.ai:', JSON.stringify(xaiData, null, 2));
+        
+        // Extract the AI's response content
+        const responseContent = xaiData.choices[0].message.content;
+        console.log('AI response content:', responseContent);
+        
+        // Parse the JSON from the response
+        let foodData;
+        try {
+          // Find JSON in the response - sometimes the AI might wrap it in ```json and ```
+          let jsonContent = responseContent;
+          
+          // Remove markdown code blocks if present
+          if (jsonContent.includes('```json')) {
+            jsonContent = jsonContent.split('```json')[1].split('```')[0].trim();
+          } else if (jsonContent.includes('```')) {
+            jsonContent = jsonContent.split('```')[1].split('```')[0].trim();
+          }
+          
+          foodData = JSON.parse(jsonContent);
+          console.log('Parsed food data:', JSON.stringify(foodData, null, 2));
+        } catch (jsonError) {
+          console.error('Error parsing food data JSON:', jsonError, 'Raw content:', responseContent);
+          throw new Error('Could not parse food data from AI response');
+        }
+        
+        // Validate the food data
+        if (!foodData.food_name || !foodData.nutrition) {
+          console.error('Invalid food data structure:', foodData);
+          throw new Error('Unable to identify food in the image. Please try again with a clearer photo.');
+        }
+        
+        // Generate personalized recommendation based on the food and user profile
+        let recommendation = null;
+        
+        if (userProfile && foodData) {
+          // Use the detected meal data to create a tailored recommendation
+          const { goal, dailyCalorieTarget, totalCaloriesConsumed } = userProfile;
+          
+          const mealCalories = foodData.nutrition?.calories || 0;
+          const mealCarbs = foodData.nutrition?.carbs || 0;
+          const mealProtein = foodData.nutrition?.protein || 0;
+          const mealFat = foodData.nutrition?.fat || 0;
+          
+          const remainingCalories = (dailyCalorieTarget || 2000) - totalCaloriesConsumed - mealCalories;
+          
+          // Generate recommendation based on user's goal and current nutritional status
+          recommendation = {
+            text: `Based on your ${goal} goal and this meal:`,
+            suggestion: generateSuggestion(goal, remainingCalories, mealCarbs, mealProtein, mealFat),
+            nutritionalBalance: assessNutritionalBalance(mealCarbs, mealProtein, mealFat, goal),
+          };
+        }
+
+        return new Response(JSON.stringify({ 
+          success: true,
+          mealData: foodData,
+          recommendation
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     } catch (apiError) {
       console.error('Error calling x.ai API:', apiError);
       return new Response(JSON.stringify({ 
