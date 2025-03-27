@@ -42,6 +42,7 @@ const MealLog = () => {
     setUploadingPhoto(true);
     setAnalysisError(null);
     setMealDetected(false); // Reset meal detection state
+    setMealData(null); // Clear any previous meal data
     
     try {
       toast({
@@ -70,6 +71,8 @@ const MealLog = () => {
       
       // 3. Call our edge function to analyze the meal
       try {
+        console.log("Calling analyze-meal edge function with URL:", imageUrl);
+        
         const response = await supabase.functions.invoke('analyze-meal', {
           body: {
             imageUrl,
@@ -84,7 +87,11 @@ const MealLog = () => {
         
         console.log("Analysis response:", response);
         
-        if (!response.data || !response.data.success) {
+        if (!response.data) {
+          throw new Error('No data received from meal analysis service');
+        }
+        
+        if (!response.data.success) {
           throw new Error(response.error || response.data?.error || 'Failed to analyze meal');
         }
         
@@ -97,11 +104,16 @@ const MealLog = () => {
         // Process AI detected meal data
         const detectedMeal = {
           name: aiMealData.food_name || 'Unknown Food',
-          calories: aiMealData.nutrition?.calories || 0,
-          protein: aiMealData.nutrition?.protein || 0,
-          carbs: aiMealData.nutrition?.carbs || 0,
-          fat: aiMealData.nutrition?.fat || 0,
+          calories: Math.round(aiMealData.nutrition?.calories) || 0,
+          protein: Math.round(aiMealData.nutrition?.protein) || 0,
+          carbs: Math.round(aiMealData.nutrition?.carbs) || 0,
+          fat: Math.round(aiMealData.nutrition?.fat) || 0,
         };
+        
+        // Validate the meal data before setting it
+        if (detectedMeal.calories <= 0) {
+          throw new Error('Could not analyze nutritional content. Please try with a clearer photo.');
+        }
         
         setMealData(detectedMeal);
         setAiRecommendation(recommendation);
@@ -127,7 +139,7 @@ const MealLog = () => {
         variant: "destructive"
       });
       
-      // Important: Don't set any default meal data on error
+      // Important: Always clear meal data on error
       setMealData(null);
       setMealDetected(false);
     } finally {
@@ -137,7 +149,7 @@ const MealLog = () => {
   
   const handleLogMeal = () => {
     // Only allow logging if we have valid meal data
-    if (!mealData || mealData.calories <= 0) {
+    if (!mealData || !mealData.name || mealData.calories <= 0) {
       toast({
         title: "Cannot log meal",
         description: "No valid meal data detected",
@@ -163,6 +175,7 @@ const MealLog = () => {
   const handleRetry = () => {
     setAnalysisError(null);
     setMealDetected(false);
+    setMealData(null);
   };
   
   return (

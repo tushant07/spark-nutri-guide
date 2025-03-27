@@ -18,9 +18,11 @@ serve(async (req) => {
   }
 
   try {
+    // Safely parse request JSON
     let requestData;
     try {
       requestData = await req.json();
+      console.log('Request data received:', JSON.stringify(requestData, null, 2));
     } catch (parseError) {
       console.error('Error parsing request JSON:', parseError);
       return new Response(JSON.stringify({ 
@@ -35,7 +37,14 @@ serve(async (req) => {
     const { imageUrl, userProfile } = requestData;
 
     if (!imageUrl) {
-      throw new Error('Image URL is required');
+      console.error('Missing image URL in request');
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Image URL is required'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     console.log('Processing image:', imageUrl);
@@ -43,6 +52,10 @@ serve(async (req) => {
 
     // Request to Grok API for food detection and analysis
     try {
+      if (!grokApiKey) {
+        throw new Error('GROK_API_KEY environment variable is not set');
+      }
+
       const grokResponse = await fetch('https://api.grok.ai/v1/analyze-food', {
         method: 'POST',
         headers: {
@@ -55,16 +68,25 @@ serve(async (req) => {
         }),
       });
 
+      // Check if the request was successful
       if (!grokResponse.ok) {
-        const errorText = await grokResponse.text();
+        let errorText = '';
+        try {
+          const errorJson = await grokResponse.json();
+          errorText = JSON.stringify(errorJson);
+        } catch {
+          errorText = await grokResponse.text();
+        }
+        
         console.error('Grok API Error:', errorText);
         throw new Error(`Grok API error: ${grokResponse.status} - ${errorText}`);
       }
 
+      // Parse the response
       let foodData;
       try {
         foodData = await grokResponse.json();
-        console.log('Food data from Grok:', JSON.stringify(foodData));
+        console.log('Food data from Grok:', JSON.stringify(foodData, null, 2));
       } catch (parseError) {
         console.error('Error parsing Grok API response:', parseError);
         throw new Error('Invalid response from Grok API');

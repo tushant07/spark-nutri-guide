@@ -41,36 +41,10 @@ interface UserContextType {
   addMeal: (meal: LoggedMeal) => void;
   totalCaloriesConsumed: number;
   weeklyData: DailyData[];
+  fetchWeeklyData: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
-
-// Generate mock weekly data
-const generateMockWeeklyData = (): DailyData[] => {
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const today = new Date();
-  
-  return days.map((day, index) => {
-    // Set the date to be "index" days ago from today
-    const date = new Date();
-    date.setDate(today.getDate() - (6 - index));
-    
-    // Generate somewhat random but realistic values
-    const baseCalories = 1500 + Math.floor(Math.random() * 500);
-    const baseProtein = 20 + Math.floor(Math.random() * 40);
-    const baseCarbs = 40 + Math.floor(Math.random() * 80);
-    const baseFat = 15 + Math.floor(Math.random() * 30);
-    
-    return {
-      day,
-      calories: baseCalories,
-      protein: baseProtein,
-      carbs: baseCarbs,
-      fat: baseFat,
-      date
-    };
-  });
-};
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
@@ -80,7 +54,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   });
   
   const [loggedMeals, setLoggedMeals] = useState<LoggedMeal[]>([]);
-  const [weeklyData, setWeeklyData] = useState<DailyData[]>(generateMockWeeklyData());
+  const [weeklyData, setWeeklyData] = useState<DailyData[]>([]);
 
   // Load profile data when user changes
   useEffect(() => {
@@ -165,28 +139,55 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     loadTodaysMeals();
   }, [user]);
 
+  const fetchWeeklyData = async () => {
+    if (!user) return;
+    
+    try {
+      // Get date for 7 days ago
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+      const fromDate = sevenDaysAgo.toISOString().split('T')[0]; // YYYY-MM-DD
+      
+      // Fetch user's daily logs for the past 7 days
+      const { data, error } = await supabase
+        .from('daily_logs')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('date', fromDate)
+        .order('date', { ascending: true });
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data && data.length > 0) {
+        // Transform data into the format expected by the chart
+        const transformedData = data.map(log => ({
+          day: log.day,
+          calories: log.calories,
+          protein: log.protein,
+          carbs: log.carbs,
+          fat: log.fat,
+          date: new Date(log.date)
+        }));
+        
+        setWeeklyData(transformedData);
+      } else {
+        // If no data, set empty array
+        setWeeklyData([]);
+      }
+    } catch (error: any) {
+      console.error("Error fetching weekly data:", error);
+      // Set empty array on error
+      setWeeklyData([]);
+    }
+  };
+
   const addMeal = (meal: LoggedMeal) => {
     setLoggedMeals((prevMeals) => [...prevMeals, meal]);
     
     // Update today's data in the weekly data when a meal is added
-    setWeeklyData(prevData => {
-      const today = new Date();
-      const todayStr = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][today.getDay()];
-      
-      return prevData.map(day => {
-        // Check if this is today's entry
-        if (day.day === todayStr) {
-          return {
-            ...day,
-            calories: day.calories + meal.calories,
-            protein: day.protein + meal.protein,
-            carbs: day.carbs + meal.carbs,
-            fat: day.fat + meal.fat
-          };
-        }
-        return day;
-      });
-    });
+    fetchWeeklyData();
   };
 
   const totalCaloriesConsumed = loggedMeals.reduce(
@@ -203,6 +204,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         addMeal,
         totalCaloriesConsumed,
         weeklyData,
+        fetchWeeklyData,
       }}
     >
       {children}

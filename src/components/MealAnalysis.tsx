@@ -25,14 +25,13 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
   const { toast } = useToast();
   const [isLoggingMeal, setIsLoggingMeal] = useState(false);
   
-  // Use provided meal data or fallback to default values
-  const currentMealData = mealData || {
-    name: 'Unknown Meal',
-    calories: 0,
-    protein: 0,
-    carbs: 0,
-    fat: 0,
-  };
+  // Check if we have valid meal data
+  const hasValidMealData = mealData && 
+    mealData.name && 
+    mealData.calories > 0 && 
+    mealData.protein >= 0 && 
+    mealData.carbs >= 0 && 
+    mealData.fat >= 0;
   
   const handleLogMeal = async () => {
     if (!user) {
@@ -44,17 +43,26 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
       return;
     }
     
+    if (!hasValidMealData) {
+      toast({
+        title: "Error",
+        description: "Cannot log meal without valid nutritional data",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsLoggingMeal(true);
     
     try {
       // Save meal to Supabase
       const { error } = await supabase.from('meal_logs').insert({
         user_id: user.id,
-        name: currentMealData.name,
-        calories: currentMealData.calories,
-        protein: currentMealData.protein,
-        carbs: currentMealData.carbs,
-        fat: currentMealData.fat
+        name: mealData.name,
+        calories: mealData.calories,
+        protein: mealData.protein,
+        carbs: mealData.carbs,
+        fat: mealData.fat
       });
       
       if (error) {
@@ -71,10 +79,10 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
         user_id: user.id,
         date: dateString,
         day: dayOfWeek,
-        calories: currentMealData.calories,
-        protein: currentMealData.protein,
-        carbs: currentMealData.carbs,
-        fat: currentMealData.fat
+        calories: mealData.calories,
+        protein: mealData.protein,
+        carbs: mealData.carbs,
+        fat: mealData.fat
       }, {
         onConflict: 'user_id,date',
         ignoreDuplicates: false
@@ -87,7 +95,7 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
       
       // Update local state
       addMeal({
-        ...currentMealData,
+        ...mealData,
         timestamp: new Date(),
       });
       
@@ -109,6 +117,20 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
     }
   };
   
+  // If no meal data provided, show a message
+  if (!mealData) {
+    return (
+      <div className="glass-card rounded-xl p-6 animate-scale-in">
+        <div className="flex flex-col items-center justify-center py-8">
+          <p className="text-gray-600 text-center mb-4">No meal data available.</p>
+          <p className="text-sm text-gray-500 text-center">
+            Take a clearer photo of your food to get nutritional information.
+          </p>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className="glass-card rounded-xl p-6 animate-scale-in">
       <div className="flex items-center mb-3">
@@ -117,40 +139,40 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
       </div>
       
       <h2 className="text-xl font-semibold mb-4 text-gray-800">
-        {currentMealData.name}
+        {mealData.name || "Unknown Food"}
       </h2>
       
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="bg-white rounded-lg p-3 border border-spark-100">
           <p className="text-sm text-gray-500 mb-1">Calories</p>
-          <p className="text-xl font-medium text-gray-800">{currentMealData.calories} kcal</p>
+          <p className="text-xl font-medium text-gray-800">{mealData.calories || 0} kcal</p>
         </div>
         
         <div className="bg-white rounded-lg p-3 border border-spark-100">
           <p className="text-sm text-gray-500 mb-1">Protein</p>
-          <p className="text-xl font-medium text-gray-800">{currentMealData.protein}g</p>
+          <p className="text-xl font-medium text-gray-800">{mealData.protein || 0}g</p>
         </div>
         
         <div className="bg-white rounded-lg p-3 border border-spark-100">
           <p className="text-sm text-gray-500 mb-1">Carbs</p>
-          <p className="text-xl font-medium text-gray-800">{currentMealData.carbs}g</p>
+          <p className="text-xl font-medium text-gray-800">{mealData.carbs || 0}g</p>
         </div>
         
         <div className="bg-white rounded-lg p-3 border border-spark-100">
           <p className="text-sm text-gray-500 mb-1">Fat</p>
-          <p className="text-xl font-medium text-gray-800">{currentMealData.fat}g</p>
+          <p className="text-xl font-medium text-gray-800">{mealData.fat || 0}g</p>
         </div>
       </div>
       
       <button
         onClick={handleLogMeal}
-        disabled={isLoggingMeal || currentMealData.calories === 0}
+        disabled={isLoggingMeal || !hasValidMealData}
         className="btn-primary w-full flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isLoggingMeal ? (
           <Loader2 className="h-5 w-5 animate-spin" />
-        ) : currentMealData.calories === 0 ? (
-          'Unable to log (No data)'
+        ) : !hasValidMealData ? (
+          'Unable to log (Invalid data)'
         ) : (
           'Log Meal'
         )}
