@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback } from 'react';
 import { Loader2, RefreshCw } from 'lucide-react';
 import Header from '@/components/Header';
@@ -11,20 +10,24 @@ import GoalConsistency from '@/components/insights/GoalConsistency';
 import NutrientHighlights from '@/components/insights/NutrientHighlights';
 import NoDataCard from '@/components/insights/NoDataCard';
 import NavigationBar from '@/components/NavigationBar';
+import ProfileHeader from '@/components/ProfileHeader';
 
 const WeeklyInsights = () => {
   const { profile, weeklyData, fetchWeeklyData } = useUser();
   const { user } = useAuth();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   
   // Fallback to default target if no profile data yet
   const dailyCalorieTarget = profile.dailyCalorieTarget || 2000;
   
   const loadData = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      console.log("No user found, skipping data fetch.");
+      return;
+    }
     
-    setLoading(true);
+    setLoading(false);
     try {
       console.log("Fetching weekly data for insights page...");
       await fetchWeeklyData();
@@ -38,6 +41,7 @@ const WeeklyInsights = () => {
       });
     } finally {
       setLoading(false);
+      console.log("Loading state set to false");
     }
   }, [user, fetchWeeklyData, toast, weeklyData]);
   
@@ -46,7 +50,7 @@ const WeeklyInsights = () => {
   }, [loadData]);
   
   const handleRefresh = async () => {
-    setLoading(true);
+    setLoading(false);
     try {
       await fetchWeeklyData();
       toast({
@@ -75,6 +79,7 @@ const WeeklyInsights = () => {
   return (
     <div className="min-h-screen gradient-background pb-20">
       <Header />
+      <ProfileHeader/>
       
       <main className="px-6 py-4 max-w-md mx-auto">
         <div className="mb-6 animate-fade-in">

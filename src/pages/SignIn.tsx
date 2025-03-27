@@ -36,23 +36,23 @@ const SignIn = () => {
   };
 
   // Demo login for testing
-  const handleDemoLogin = async () => {
-    setIsSubmitting(true);
+  // const handleDemoLogin = async () => {
+  //   setIsSubmitting(true);
     
-    try {
-      await signIn('demo@example.com', 'password123');
-      localStorage.setItem('isAuthenticated', 'true');
-      navigate('/dashboard');
-    } catch (error: any) {
-      toast({
-        title: "Demo login failed",
-        description: "Please try signing up first",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  //   try {
+  //     await signIn('demo@example.com', 'password123');
+  //     localStorage.setItem('isAuthenticated', 'true');
+  //     navigate('/dashboard');
+  //   } catch (error: any) {
+  //     toast({
+  //       title: "Demo login failed",
+  //       description: "Please try signing up first",
+  //       variant: "destructive"
+  //     });
+  //   } finally {
+  //     setIsSubmitting(false);
+  //   }
+  // };
 
   return (
     <div className="min-h-screen gradient-background flex flex-col items-center justify-center p-6">
@@ -107,7 +107,7 @@ const SignIn = () => {
             </button>
           </form>
 
-          <div className="mt-4">
+          {/* <div className="mt-4">
             <button 
               onClick={handleDemoLogin}
               disabled={isSubmitting}
@@ -115,7 +115,7 @@ const SignIn = () => {
             >
               Demo Login
             </button>
-          </div>
+          </div> */}
 
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">

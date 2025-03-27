@@ -1,47 +1,37 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import express from 'express';
 
-const xaiApiKey = Deno.env.get('XAI_API_KEY');
-const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+const xaiApiKey = process.env.XAI_API_KEY;
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+// Create an Express application
+const app = express();
+
+// Middleware to parse JSON requests
+app.use(express.json());
+
+// Set up the route
+app.post('/analyze-meal', async (req, res) => {
   // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  res.set(corsHeaders);
 
   try {
     // Safely parse request JSON
-    let requestData;
-    try {
-      requestData = await req.json();
-      console.log('Request data received:', JSON.stringify(requestData, null, 2));
-    } catch (parseError) {
-      console.error('Error parsing request JSON:', parseError);
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'Invalid JSON in request body' 
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    const requestData = req.body;
+    console.log('Request data received:', JSON.stringify(requestData, null, 2));
 
     const { imageUrl, userProfile } = requestData;
 
     if (!imageUrl) {
       console.error('Missing image URL in request');
-      return new Response(JSON.stringify({
+      return res.status(400).json({
         success: false,
         error: 'Image URL is required'
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -163,8 +153,8 @@ serve(async (req) => {
           throw new Error('Unable to identify food in the image. Please try again with a clearer photo.');
         }
         
-        // Generate personalized recommendation based on the food and user profile
-        let recommendation = null;
+        // Initialize recommendation as an object
+        let recommendation: { text: string; suggestion: string; nutritionalBalance: string; } | null = null;
         
         if (userProfile && foodData) {
           // Use the detected meal data to create a tailored recommendation
@@ -185,12 +175,10 @@ serve(async (req) => {
           };
         }
 
-        return new Response(JSON.stringify({ 
+        return res.json({ 
           success: true,
           mealData: foodData,
           recommendation
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       } else {
         // If content type is already supported, proceed with original URL
@@ -275,8 +263,8 @@ serve(async (req) => {
           throw new Error('Unable to identify food in the image. Please try again with a clearer photo.');
         }
         
-        // Generate personalized recommendation based on the food and user profile
-        let recommendation = null;
+        // Initialize recommendation as an object
+        let recommendation: { text: string; suggestion: string; nutritionalBalance: string; } | null = null;
         
         if (userProfile && foodData) {
           // Use the detected meal data to create a tailored recommendation
@@ -297,34 +285,32 @@ serve(async (req) => {
           };
         }
 
-        return new Response(JSON.stringify({ 
+        return res.json({ 
           success: true,
           mealData: foodData,
           recommendation
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
     } catch (apiError) {
       console.error('Error calling x.ai API:', apiError);
-      return new Response(JSON.stringify({ 
+      return res.status(500).json({ 
         success: false, 
         error: apiError.message || 'Error analyzing food image' 
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
   } catch (error) {
     console.error('Error in analyze-meal function:', error);
-    return new Response(JSON.stringify({ 
+    return res.status(500).json({ 
       success: false, 
       error: error.message || 'Unknown error occurred' 
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
+});
+
+// Start the server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
 
 // Helper function to generate meal suggestions

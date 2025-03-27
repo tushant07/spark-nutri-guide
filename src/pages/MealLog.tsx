@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import ProfileHeader from '@/components/ProfileHeader';
 
 const MealLog = () => {
   const navigate = useNavigate();
@@ -181,6 +182,7 @@ const MealLog = () => {
   return (
     <div className="min-h-screen gradient-background pb-20">
       <Header />
+      <ProfileHeader/>
       
       <main className="px-6 py-4 max-w-md mx-auto">
         {profile.created && (

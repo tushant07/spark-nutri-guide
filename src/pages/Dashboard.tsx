@@ -6,6 +6,8 @@ import NavigationBar from '@/components/NavigationBar';
 import { useUser } from '@/context/UserContext';
 import { Progress } from '@/components/ui/progress';
 import AIRecommendation from '@/components/AIRecommendation';
+import ProfileHeader from '@/components/ProfileHeader';
+
 
 const Dashboard = () => {
   const { profile, loggedMeals, totalCaloriesConsumed } = useUser();
@@ -32,6 +34,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen gradient-background pb-20">
       <Header />
+      <ProfileHeader/>
       
       <main className="px-6 py-4 max-w-md mx-auto">
         <div className="mb-6 animate-fade-in">
