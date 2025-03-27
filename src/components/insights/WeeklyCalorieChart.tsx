@@ -11,7 +11,10 @@ interface WeeklyCalorieChartProps {
 
 const WeeklyCalorieChart = ({ weeklyData }: WeeklyCalorieChartProps) => {
   // Check if we have any valid data with calories
-  const hasValidData = weeklyData.some(day => day.calories !== undefined && day.calories > 0);
+  const hasValidData = weeklyData && weeklyData.some(day => day.calories !== undefined && day.calories > 0);
+  
+  console.log("WeeklyCalorieChart - weekly data:", weeklyData);
+  console.log("WeeklyCalorieChart - has valid data:", hasValidData);
 
   if (!hasValidData) {
     return (

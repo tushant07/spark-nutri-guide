@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Loader2, RefreshCw } from 'lucide-react';
 import Header from '@/components/Header';
 import { useUser } from '@/context/UserContext';
@@ -10,6 +10,7 @@ import WeeklyCalorieChart from '@/components/insights/WeeklyCalorieChart';
 import GoalConsistency from '@/components/insights/GoalConsistency';
 import NutrientHighlights from '@/components/insights/NutrientHighlights';
 import NoDataCard from '@/components/insights/NoDataCard';
+import NavigationBar from '@/components/NavigationBar';
 
 const WeeklyInsights = () => {
   const { profile, weeklyData, fetchWeeklyData } = useUser();
@@ -20,27 +21,29 @@ const WeeklyInsights = () => {
   // Fallback to default target if no profile data yet
   const dailyCalorieTarget = profile.dailyCalorieTarget || 2000;
   
-  useEffect(() => {
-    const loadData = async () => {
-      if (!user) return;
-      
-      setLoading(true);
-      try {
-        await fetchWeeklyData();
-      } catch (error: any) {
-        console.error("Error loading data:", error);
-        toast({
-          title: "Error loading data",
-          description: error.message,
-          variant: "destructive"
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  const loadData = useCallback(async () => {
+    if (!user) return;
     
+    setLoading(true);
+    try {
+      console.log("Fetching weekly data for insights page...");
+      await fetchWeeklyData();
+      console.log("Weekly data fetched:", weeklyData);
+    } catch (error: any) {
+      console.error("Error loading weekly data:", error);
+      toast({
+        title: "Error loading data",
+        description: error.message || "Failed to load weekly insights",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [user, fetchWeeklyData, toast, weeklyData]);
+  
+  useEffect(() => {
     loadData();
-  }, [user, fetchWeeklyData, toast]);
+  }, [loadData]);
   
   const handleRefresh = async () => {
     setLoading(true);
@@ -53,7 +56,7 @@ const WeeklyInsights = () => {
     } catch (error: any) {
       toast({
         title: "Error refreshing data",
-        description: error.message,
+        description: error.message || "Failed to refresh data",
         variant: "destructive"
       });
     } finally {
@@ -93,7 +96,7 @@ const WeeklyInsights = () => {
           </p>
         </div>
         
-        {weeklyData.length === 0 ? (
+        {(!weeklyData || weeklyData.length === 0) ? (
           <NoDataCard />
         ) : (
           <>
@@ -103,6 +106,8 @@ const WeeklyInsights = () => {
           </>
         )}
       </main>
+      
+      <NavigationBar />
     </div>
   );
 };

@@ -15,8 +15,6 @@ import NotFound from "./pages/NotFound";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import { ProtectedRoute, PublicOnly } from "@/components/ProtectedRoute";
-import ProfileHeader from "@/components/ProfileHeader";
-import NavigationBar from "@/components/NavigationBar";
 
 const queryClient = new QueryClient();
 
@@ -39,27 +37,9 @@ const App = () => (
               {/* Protected routes */}
               <Route element={<ProtectedRoute />}>
                 <Route path="/profile" element={<Profile />} />
-                <Route path="/dashboard" element={
-                  <>
-                    <ProfileHeader />
-                    <Dashboard />
-                    <NavigationBar />
-                  </>
-                } />
-                <Route path="/meal-log" element={
-                  <>
-                    <ProfileHeader />
-                    <MealLog />
-                    <NavigationBar />
-                  </>
-                } />
-                <Route path="/weekly-insights" element={
-                  <>
-                    <ProfileHeader />
-                    <WeeklyInsights />
-                    <NavigationBar />
-                  </>
-                } />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/meal-log" element={<MealLog />} />
+                <Route path="/weekly-insights" element={<WeeklyInsights />} />
                 <Route path="/plan" element={<Navigate to="/dashboard" />} />
               </Route>
               
