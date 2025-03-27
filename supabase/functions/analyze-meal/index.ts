@@ -1,8 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const grokApiKey = Deno.env.get('GROK_API_KEY');
+const xaiApiKey = Deno.env.get('XAI_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 
@@ -50,51 +49,91 @@ serve(async (req) => {
     console.log('Processing image:', imageUrl);
     console.log('User profile:', userProfile);
 
-    // Request to Grok API for food detection and analysis
+    // Request to x.ai API for food detection and analysis
     try {
-      if (!grokApiKey) {
-        throw new Error('GROK_API_KEY environment variable is not set');
+      if (!xaiApiKey) {
+        throw new Error('XAI_API_KEY environment variable is not set');
       }
 
-      const grokResponse = await fetch('https://api.grok.ai/v1/vision/analyze-food', {
+      // Use the x.ai API format with the grok-2-vision-latest model
+      const xaiResponse = await fetch('https://api.x.ai/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${grokApiKey}`,
+          'Authorization': `Bearer ${xaiApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           model: "grok-2-vision-latest",
-          image_url: imageUrl,
-          include_nutrition: true,
+          messages: [
+            {
+              role: "system",
+              content: "You are a nutrition expert that analyzes food images. Respond with ONLY a valid JSON object containing: food_name (string), nutrition: { calories (number), protein (g, number), carbs (g, number), fat (g, number) }. No text before or after the JSON."
+            },
+            {
+              role: "user",
+              content: [
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: imageUrl,
+                    detail: "high",
+                  },
+                },
+                {
+                  type: "text",
+                  text: "Analyze this food image and provide the food name, calories, protein, carbs, and fat content in JSON format."
+                },
+              ],
+            },
+          ],
         }),
       });
 
       // Check if the request was successful
-      if (!grokResponse.ok) {
+      if (!xaiResponse.ok) {
         let errorText = '';
         try {
-          const errorJson = await grokResponse.json();
+          const errorJson = await xaiResponse.json();
           errorText = JSON.stringify(errorJson);
         } catch {
-          errorText = await grokResponse.text();
+          errorText = await xaiResponse.text();
         }
         
-        console.error('Grok API Error:', errorText);
-        throw new Error(`Grok API error: ${grokResponse.status} - ${errorText}`);
+        console.error('x.ai API Error:', errorText);
+        throw new Error(`x.ai API error: ${xaiResponse.status} - ${errorText}`);
       }
 
       // Parse the response
+      const xaiData = await xaiResponse.json();
+      console.log('Raw response from x.ai:', JSON.stringify(xaiData, null, 2));
+      
+      // Extract the AI's response content
+      const responseContent = xaiData.choices[0].message.content;
+      console.log('AI response content:', responseContent);
+      
+      // Parse the JSON from the response
       let foodData;
       try {
-        foodData = await grokResponse.json();
-        console.log('Food data from Grok:', JSON.stringify(foodData, null, 2));
-      } catch (parseError) {
-        console.error('Error parsing Grok API response:', parseError);
-        throw new Error('Invalid response from Grok API');
+        // Find JSON in the response - sometimes the AI might wrap it in ```json and ```
+        let jsonContent = responseContent;
+        
+        // Remove markdown code blocks if present
+        if (jsonContent.includes('```json')) {
+          jsonContent = jsonContent.split('```json')[1].split('```')[0].trim();
+        } else if (jsonContent.includes('```')) {
+          jsonContent = jsonContent.split('```')[1].split('```')[0].trim();
+        }
+        
+        foodData = JSON.parse(jsonContent);
+        console.log('Parsed food data:', JSON.stringify(foodData, null, 2));
+      } catch (jsonError) {
+        console.error('Error parsing food data JSON:', jsonError, 'Raw content:', responseContent);
+        throw new Error('Could not parse food data from AI response');
       }
       
       // Validate the food data
       if (!foodData.food_name || !foodData.nutrition) {
+        console.error('Invalid food data structure:', foodData);
         throw new Error('Unable to identify food in the image. Please try again with a clearer photo.');
       }
       
@@ -127,11 +166,11 @@ serve(async (req) => {
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
-    } catch (grokError) {
-      console.error('Error calling Grok API:', grokError);
+    } catch (apiError) {
+      console.error('Error calling x.ai API:', apiError);
       return new Response(JSON.stringify({ 
         success: false, 
-        error: grokError.message || 'Error analyzing food image' 
+        error: apiError.message || 'Error analyzing food image' 
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
