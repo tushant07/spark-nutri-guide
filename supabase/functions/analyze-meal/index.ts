@@ -56,13 +56,14 @@ serve(async (req) => {
         throw new Error('GROK_API_KEY environment variable is not set');
       }
 
-      const grokResponse = await fetch('https://api.grok.ai/v1/analyze-food', {
+      const grokResponse = await fetch('https://api.grok.ai/v1/vision/analyze-food', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${grokApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          model: "grok-2-vision-latest",
           image_url: imageUrl,
           include_nutrition: true,
         }),
@@ -128,7 +129,13 @@ serve(async (req) => {
       });
     } catch (grokError) {
       console.error('Error calling Grok API:', grokError);
-      throw grokError;
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: grokError.message || 'Error analyzing food image' 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
   } catch (error) {
     console.error('Error in analyze-meal function:', error);
