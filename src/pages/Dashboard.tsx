@@ -175,6 +175,9 @@ const Dashboard = () => {
             )}
           </div>
         </div>
+
+        {/* AI Recommendation Section */}
+        <AIRecommendationCard />
         
         {/* Daily Calorie Target Section */}
         {idealCalories && (
@@ -260,8 +263,7 @@ const Dashboard = () => {
           )}
         </div>
         
-        {/* AI Recommendation Section */}
-        <AIRecommendationCard />
+        
       </main>
       
       <NavigationBar />
