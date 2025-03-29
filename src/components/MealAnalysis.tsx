@@ -1,9 +1,11 @@
+
 import { useState } from 'react';
 import { useUser } from '@/context/UserContext';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Tag, Info, AlertTriangle } from 'lucide-react';
+import { Loader2, Tag, Info, AlertTriangle, Award } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface MealData {
   name: string;
@@ -22,6 +24,14 @@ interface MealAnalysisProps {
   mealData?: MealData;
   onLogMeal: () => void;
 }
+
+// New type for health score
+type HealthScoreType = {
+  score: number;
+  label: string;
+  color: string;
+  description: string;
+};
 
 const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
   const { addMeal, profile } = useUser();
@@ -113,6 +123,102 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
   };
   
   const enhancedHealthInsight = generateHealthInsight();
+  
+  // Calculate a health score based on the meal data
+  const calculateHealthScore = (): HealthScoreType => {
+    if (!hasValidMealData || !mealData) {
+      return { 
+        score: 0, 
+        label: 'Unavailable', 
+        color: 'bg-gray-300', 
+        description: 'Health score unavailable for this meal.' 
+      };
+    }
+    
+    // Initialize score variables
+    let baseScore = 70; // Start with a neutral score
+    let nutritionBalance = 0;
+    let redFlags = 0;
+    
+    // Calculate nutrition balance (protein vs carbs vs fat)
+    const totalNutrients = mealData.protein + mealData.carbs + mealData.fat;
+    
+    if (totalNutrients > 0) {
+      const proteinPercentage = mealData.protein / totalNutrients;
+      const carbsPercentage = mealData.carbs / totalNutrients;
+      const fatPercentage = mealData.fat / totalNutrients;
+      
+      // Ideal macronutrient ratios depend on goals, but we'll use general guidelines
+      // For balanced diet: ~30% protein, ~40% carbs, ~30% fat
+      
+      // Add points for balanced macros (simplified calculation)
+      if (proteinPercentage >= 0.2 && proteinPercentage <= 0.4) {
+        nutritionBalance += 10;
+      }
+      
+      if (carbsPercentage >= 0.3 && carbsPercentage <= 0.5) {
+        nutritionBalance += 10;
+      }
+      
+      if (fatPercentage >= 0.2 && fatPercentage <= 0.4) {
+        nutritionBalance += 10;
+      }
+    }
+    
+    // Consider calorie density
+    if (mealData.calories > 600) {
+      // High calorie meal - could be good or bad depending on goals
+      if (goal === 'Lose Weight') {
+        redFlags += 15;
+      } else if (goal === 'Increase Weight' || goal === 'Build Muscle') {
+        nutritionBalance += 10;
+      }
+    }
+    
+    // Consider protein content for muscle building
+    if (goal === 'Build Muscle' && mealData.protein < 20) {
+      redFlags += 10;
+    }
+    
+    // Packaged food generally scores lower due to potential additives, preservatives
+    if (mealData.is_packaged) {
+      redFlags += 10;
+    }
+    
+    // Allergen presence is a major red flag
+    if (matchedAllergens.length > 0) {
+      redFlags += 25;
+    }
+    
+    // Calculate final score
+    const finalScore = Math.max(0, Math.min(100, baseScore + nutritionBalance - redFlags));
+    
+    // Determine score category
+    if (finalScore >= 70) {
+      return {
+        score: finalScore,
+        label: 'Healthy Choice',
+        color: 'bg-green-500',
+        description: 'This meal aligns well with your nutritional goals.'
+      };
+    } else if (finalScore >= 40) {
+      return {
+        score: finalScore,
+        label: 'Moderate Choice',
+        color: 'bg-amber-400',
+        description: 'This meal has some nutritional benefits but could be improved.'
+      };
+    } else {
+      return {
+        score: finalScore,
+        label: 'Cautious Choice',
+        color: 'bg-red-500',
+        description: 'This meal may not support your nutritional goals well.'
+      };
+    }
+  };
+  
+  const healthScore = calculateHealthScore();
   
   const handleLogMeal = async () => {
     if (!user) {
@@ -214,20 +320,48 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
   
   return (
     <div className="glass-card rounded-xl p-6 animate-scale-in">
-      <div className="flex items-center mb-3">
-        <div className="w-2 h-2 rounded-full bg-spark-500 mr-2"></div>
-        <h3 className="text-sm font-medium text-gray-500">{title}</h3>
-        {mealData.is_packaged && (
-          <div className="ml-2 px-2 py-0.5 bg-blue-100 rounded-full flex items-center">
-            <Tag className="h-3 w-3 mr-1 text-blue-500" />
-            <span className="text-xs text-blue-500 font-medium">Packaged Food</span>
-          </div>
-        )}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center">
+          <div className="w-2 h-2 rounded-full bg-spark-500 mr-2"></div>
+          <h3 className="text-sm font-medium text-gray-500">{title}</h3>
+          {mealData.is_packaged && (
+            <div className="ml-2 px-2 py-0.5 bg-blue-100 rounded-full flex items-center">
+              <Tag className="h-3 w-3 mr-1 text-blue-500" />
+              <span className="text-xs text-blue-500 font-medium">Packaged Food</span>
+            </div>
+          )}
+        </div>
+        
+        {/* Health Score Badge */}
+        <Badge 
+          className={`${healthScore.color} text-white px-3 py-1 flex items-center gap-1`}
+          variant="default"
+        >
+          <Award className="h-3 w-3" />
+          <span className="font-medium">{healthScore.score}/100</span>
+        </Badge>
       </div>
       
       <h2 className="text-xl font-semibold mb-2 text-gray-800">
         {mealData.name || "Unknown Food"}
       </h2>
+      
+      {/* Health Score Details */}
+      <div className={`mb-4 p-3 rounded-lg border ${
+        healthScore.color === 'bg-green-500' ? 'bg-green-50 border-green-100' :
+        healthScore.color === 'bg-amber-400' ? 'bg-amber-50 border-amber-100' :
+        'bg-red-50 border-red-100'
+      }`}>
+        <div className="flex items-center text-sm mb-1">
+          <Award className={`h-4 w-4 mr-1 ${
+            healthScore.color === 'bg-green-500' ? 'text-green-500' :
+            healthScore.color === 'bg-amber-400' ? 'text-amber-500' :
+            'text-red-500'
+          }`} />
+          <span className="font-semibold">{healthScore.label}</span>
+        </div>
+        <p className="text-sm text-gray-700">{healthScore.description}</p>
+      </div>
       
       {mealData.food_description && (
         <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
