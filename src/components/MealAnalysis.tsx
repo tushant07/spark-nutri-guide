@@ -4,7 +4,7 @@ import { useUser } from '@/context/UserContext';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Tag, Info } from 'lucide-react';
 
 interface MealData {
   name: string;
@@ -12,6 +12,8 @@ interface MealData {
   protein: number;
   carbs: number;
   fat: number;
+  is_packaged?: boolean;
+  food_description?: string;
 }
 
 interface MealAnalysisProps {
@@ -136,11 +138,27 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
       <div className="flex items-center mb-3">
         <div className="w-2 h-2 rounded-full bg-spark-500 mr-2"></div>
         <h3 className="text-sm font-medium text-gray-500">DETECTED MEAL</h3>
+        {mealData.is_packaged && (
+          <div className="ml-2 px-2 py-0.5 bg-blue-100 rounded-full flex items-center">
+            <Tag className="h-3 w-3 mr-1 text-blue-500" />
+            <span className="text-xs text-blue-500 font-medium">Packaged Food</span>
+          </div>
+        )}
       </div>
       
-      <h2 className="text-xl font-semibold mb-4 text-gray-800">
+      <h2 className="text-xl font-semibold mb-2 text-gray-800">
         {mealData.name || "Unknown Food"}
       </h2>
+      
+      {mealData.food_description && (
+        <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
+          <div className="flex items-center text-sm text-gray-500 mb-1">
+            <Info className="h-4 w-4 mr-1 text-spark-500" />
+            <span>About this food</span>
+          </div>
+          <p className="text-sm text-gray-700">{mealData.food_description}</p>
+        </div>
+      )}
       
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="bg-white rounded-lg p-3 border border-spark-100">

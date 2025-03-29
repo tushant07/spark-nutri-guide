@@ -109,6 +109,8 @@ const MealLog = () => {
           protein: Math.round(aiMealData.nutrition?.protein) || 0,
           carbs: Math.round(aiMealData.nutrition?.carbs) || 0,
           fat: Math.round(aiMealData.nutrition?.fat) || 0,
+          is_packaged: aiMealData.is_packaged || false,
+          food_description: aiMealData.food_description || null
         };
         
         // Validate the meal data before setting it

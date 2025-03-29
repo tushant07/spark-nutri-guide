@@ -1,3 +1,4 @@
+
 import express from 'express';
 
 const xaiApiKey = process.env.XAI_API_KEY;
@@ -83,7 +84,7 @@ app.post('/analyze-meal', async (req, res) => {
             messages: [
               {
                 role: "system",
-                content: "You are a nutrition expert that analyzes food images. Respond with ONLY a valid JSON object containing: food_name (string), nutrition: { calories (number), protein (g, number), carbs (g, number), fat (g, number) }. No text before or after the JSON."
+                content: "You are a nutrition expert that analyzes food images. Respond with ONLY a valid JSON object containing: food_name (string), is_packaged (boolean, true if food is in a package/has a nutrition label), food_description (brief description of what's in the image), nutrition: { calories (number), protein (g, number), carbs (g, number), fat (g, number) }. No text before or after the JSON."
               },
               {
                 role: "user",
@@ -97,7 +98,7 @@ app.post('/analyze-meal', async (req, res) => {
                   },
                   {
                     type: "text",
-                    text: "Analyze this food image and provide the food name, calories, protein, carbs, and fat content in JSON format."
+                    text: "Analyze this food image. Identify if it's packaged food or fresh food. Provide the food name, a brief description, and nutrition information in JSON format. If you can see a nutrition label, use that data."
                   },
                 ],
               },
@@ -193,7 +194,7 @@ app.post('/analyze-meal', async (req, res) => {
             messages: [
               {
                 role: "system",
-                content: "You are a nutrition expert that analyzes food images. Respond with ONLY a valid JSON object containing: food_name (string), nutrition: { calories (number), protein (g, number), carbs (g, number), fat (g, number) }. No text before or after the JSON."
+                content: "You are a nutrition expert that analyzes food images. Respond with ONLY a valid JSON object containing: food_name (string), is_packaged (boolean, true if food is in a package/has a nutrition label), food_description (brief description of what's in the image), nutrition: { calories (number), protein (g, number), carbs (g, number), fat (g, number) }. No text before or after the JSON."
               },
               {
                 role: "user",
@@ -207,7 +208,7 @@ app.post('/analyze-meal', async (req, res) => {
                   },
                   {
                     type: "text",
-                    text: "Analyze this food image and provide the food name, calories, protein, carbs, and fat content in JSON format."
+                    text: "Analyze this food image. Identify if it's packaged food or fresh food. Provide the food name, a brief description, and nutrition information in JSON format. If you can see a nutrition label, use that data."
                   },
                 ],
               },
