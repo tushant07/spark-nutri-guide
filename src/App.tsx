@@ -20,12 +20,12 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
+    <BrowserRouter>
       <AuthProvider>
         <UserProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
             <Routes>
               {/* Public routes - will redirect to dashboard if logged in with completed profile */}
               <Route element={<PublicOnly />}>
@@ -46,10 +46,10 @@ const App = () => (
               {/* Fallback route */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </BrowserRouter>
+          </TooltipProvider>
         </UserProvider>
       </AuthProvider>
-    </TooltipProvider>
+    </BrowserRouter>
   </QueryClientProvider>
 );
 
