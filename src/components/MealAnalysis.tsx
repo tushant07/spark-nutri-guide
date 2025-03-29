@@ -25,10 +25,13 @@ interface MealAnalysisProps {
 }
 
 const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
-  const { addMeal } = useUser();
+  const { addMeal, profile } = useUser();
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLoggingMeal, setIsLoggingMeal] = useState(false);
+  
+  // Extract profile data for health recommendations
+  const { age, height, weight, goal } = profile;
   
   // Check if we have valid meal data
   const hasValidMealData = mealData && 
@@ -37,6 +40,41 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
     mealData.protein >= 0 && 
     mealData.carbs >= 0 && 
     mealData.fat >= 0;
+  
+  // Generate health insight based on user profile and meal data
+  const generateHealthInsight = () => {
+    if (!hasValidMealData || !mealData) return null;
+    
+    let insight = mealData.health_insights || "";
+    
+    // Add weight-related insights if profile data is available
+    if (height && weight && age) {
+      // Calculate BMI (weight in kg / height in m^2)
+      const heightInMeters = height / 100;
+      const bmi = weight / (heightInMeters * heightInMeters);
+      
+      // Add BMI-related insights
+      if (goal === 'Lose Weight' && bmi > 25) {
+        if (mealData.calories > 600) {
+          insight += " This meal is relatively high in calories. Consider portion control or lighter alternatives to support your weight loss goals.";
+        } else if (mealData.protein > mealData.fat && mealData.protein > mealData.carbs) {
+          insight += " This meal is high in protein, which is great for satiety and supporting your weight loss journey.";
+        }
+      } else if (goal === 'Increase Weight' && bmi < 18.5) {
+        if (mealData.calories < 400) {
+          insight += " To support healthy weight gain, consider adding nutritious calorie-dense foods like nuts, avocados, or a side of whole grains to this meal.";
+        }
+      } else if (goal === 'Build Muscle') {
+        if (mealData.protein < 20) {
+          insight += " For muscle building, consider adding a protein source to complement this meal and support muscle recovery and growth.";
+        }
+      }
+    }
+    
+    return insight.trim();
+  };
+  
+  const enhancedHealthInsight = generateHealthInsight();
   
   const handleLogMeal = async () => {
     if (!user) {
@@ -203,13 +241,13 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
         </div>
       </div>
       
-      {mealData.health_insights && (
+      {(enhancedHealthInsight || mealData.health_insights) && (
         <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-100">
           <div className="flex items-center text-sm text-green-600 mb-1">
             <Info className="h-4 w-4 mr-1" />
             <span>Health Insights</span>
           </div>
-          <p className="text-sm text-gray-700">{mealData.health_insights}</p>
+          <p className="text-sm text-gray-700">{enhancedHealthInsight || mealData.health_insights}</p>
         </div>
       )}
       
