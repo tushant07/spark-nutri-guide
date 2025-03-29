@@ -23,13 +23,9 @@ const Index = () => {
           navigate('/profile');
         }
       } else {
-        // If not signed in, redirect to sign-in after a short delay
-        const timer = setTimeout(() => {
-          console.log("No user detected, navigating to sign-in");
-          navigate('/sign-in');
-        }, 2000);
-        
-        return () => clearTimeout(timer);
+        // If not signed in, redirect to sign-in immediately without delay
+        console.log("No user detected, navigating to sign-in");
+        navigate('/sign-in');
       }
     }
   }, [navigate, profile.created, user, loading]);
