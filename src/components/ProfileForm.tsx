@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useToast } from '@/hooks/use-toast';
+import { DietaryPreference } from '@/context/UserContext';
 
 const ProfileForm = () => {
   const navigate = useNavigate();
@@ -26,10 +27,10 @@ const ProfileForm = () => {
     height: '',
     gender: '',
     goal: '',
-    allergies: [],
+    allergies: [] as string[],
     receiveWaterReminders: false,
     waterReminderInterval: '2',
-    dietaryPreference: 'No Preference',
+    dietaryPreference: 'No Preference' as DietaryPreference,
   });
   const [submitting, setSubmitting] = useState(false);
   const [newAllergy, setNewAllergy] = useState('');
@@ -45,7 +46,7 @@ const ProfileForm = () => {
         allergies: profile.allergies || [],
         receiveWaterReminders: profile.receiveWaterReminders || false,
         waterReminderInterval: profile.waterReminderInterval?.toString() || '2',
-        dietaryPreference: profile.dietaryPreference || 'No Preference',
+        dietaryPreference: (profile.dietaryPreference || 'No Preference') as DietaryPreference,
       });
     }
   }, [profile, user]);

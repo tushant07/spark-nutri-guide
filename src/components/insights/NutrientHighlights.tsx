@@ -1,9 +1,10 @@
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
-import { List } from 'lucide-react';
+import { List, RefreshCcw } from 'lucide-react';
 import { DailyData } from '@/context/UserContext';
 import { useUser } from '@/context/UserContext';
+import { Button } from '@/components/ui/button';
 
 interface NutrientHighlightsProps {
   weeklyData: DailyData[];
@@ -37,15 +38,15 @@ const NutrientHighlights = ({ weeklyData, goalType }: NutrientHighlightsProps) =
     
     switch(goalType) {
       case 'Increase Weight':
-        return avgCalories < 2000 
+        return avgCalories < targets.calories 
           ? "Try increasing your overall calorie intake to meet your weight gain goals."
           : "Great job meeting your calorie goals! Keep it up!";
       case 'Lose Weight':
-        return avgCarbs > 200 
+        return avgCarbs > targets.carbs 
           ? "Consider reducing your carb intake to help meet your weight loss goals."
           : "You're doing great staying within your calorie target!";
       case 'Build Muscle':
-        return avgProtein < 100 
+        return avgProtein < targets.protein 
           ? "Increase your protein intake to support muscle growth and recovery."
           : "Good protein intake! Keep it up for optimal muscle building.";
       default:
@@ -56,9 +57,11 @@ const NutrientHighlights = ({ weeklyData, goalType }: NutrientHighlightsProps) =
   return (
     <Card className="mb-6 animate-scale-in">
       <CardHeader className="pb-2">
-        <div className="flex items-center">
-          <List className="mr-2 h-5 w-5 text-spark-500" />
-          <CardTitle className="text-lg">Nutrient Highlights</CardTitle>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <List className="mr-2 h-5 w-5 text-spark-500" />
+            <CardTitle className="text-lg">Nutrient Highlights</CardTitle>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -85,6 +88,11 @@ const NutrientHighlights = ({ weeklyData, goalType }: NutrientHighlightsProps) =
               <TableCell className="font-medium">Fat</TableCell>
               <TableCell className="text-right">{avgFat}g</TableCell>
               <TableCell className="text-right">{targets.fat}g</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-medium">Calories</TableCell>
+              <TableCell className="text-right">{avgCalories} kcal</TableCell>
+              <TableCell className="text-right">{targets.calories} kcal</TableCell>
             </TableRow>
           </TableBody>
         </Table>

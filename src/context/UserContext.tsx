@@ -1,33 +1,31 @@
-
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
 
-type Goal = 'Increase Weight' | 'Lose Weight' | 'Build Muscle';
-type Gender = 'Male' | 'Female' | 'Other';
-type DietaryPreference = 'No Preference' | 'Vegetarian' | 'Non-Vegetarian' | 'Vegan';
+// Add DietaryPreference type definition above the Profile interface
+export type DietaryPreference = 'No Preference' | 'Vegetarian' | 'Non-Vegetarian' | 'Vegan';
 
-export interface UserProfile {
+export interface Profile {
   age?: number;
   weight?: number;
   height?: number;
-  gender?: Gender;
-  goal?: Goal;
+  gender?: 'Male' | 'Female' | 'Other';
+  goal?: 'Increase Weight' | 'Lose Weight' | 'Build Muscle';
   dailyCalorieTarget?: number;
   allergies?: string[];
   receiveWaterReminders?: boolean;
   waterReminderInterval?: number;
   dietaryPreference?: DietaryPreference;
-  created: boolean;
+  created?: boolean;
 }
 
-export interface LoggedMeal {
+export interface Meal {
+  id: string;
   name: string;
   calories: number;
   protein: number;
   carbs: number;
   fat: number;
-  timestamp: Date;
+  timestamp: string;
 }
 
 export interface DailyData {
@@ -36,373 +34,293 @@ export interface DailyData {
   protein: number;
   carbs: number;
   fat: number;
-  date: Date;
-}
-
-export interface NutrientTargets {
-  protein: number;
-  carbs: number;
-  fat: number;
 }
 
 interface UserContextType {
-  profile: UserProfile;
-  setProfile: React.Dispatch<React.SetStateAction<UserProfile>>;
-  loggedMeals: LoggedMeal[];
-  addMeal: (meal: LoggedMeal) => void;
+  profile: Profile;
+  setProfile: (profile: Profile) => void;
+  loggedMeals: Meal[];
+  logMeal: (meal: Omit<Meal, 'id'>) => Promise<void>;
+  deleteMeal: (id: string) => Promise<void>;
+  fetchLoggedMeals: () => Promise<void>;
   totalCaloriesConsumed: number;
   weeklyData: DailyData[];
   fetchWeeklyData: () => Promise<void>;
   initWaterReminders: () => void;
-  getNutrientTargets: () => NutrientTargets;
-  getNewMealRecommendation: () => { text: string; suggestion: string; nutritionalBalance: string };
+  getAIRecommendation: () => string;
+  getNutrientTargets: () => { protein: number; carbs: number; fat: number; calories: number };
 }
 
-const UserContext = createContext<UserContextType | undefined>(undefined);
+const UserContext = createContext<UserContextType>({
+  profile: {},
+  setProfile: () => {},
+  loggedMeals: [],
+  logMeal: async () => {},
+  deleteMeal: async () => {},
+  fetchLoggedMeals: async () => {},
+  totalCaloriesConsumed: 0,
+  weeklyData: [],
+  fetchWeeklyData: async () => {},
+  initWaterReminders: () => {},
+  getAIRecommendation: () => "",
+  getNutrientTargets: () => ({ protein: 0, carbs: 0, fat: 0, calories: 0 }),
+});
 
-export const UserProvider = ({ children }: { children: ReactNode }) => {
-  const { user } = useAuth();
-  const [profileLoading, setProfileLoading] = useState(true);
-  const [profile, setProfile] = useState<UserProfile>({
-    created: false,
-  });
-  
-  const [loggedMeals, setLoggedMeals] = useState<LoggedMeal[]>([]);
+export const useUser = () => useContext(UserContext);
+
+export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [profile, setProfile] = useState<Profile>({});
+  const [loggedMeals, setLoggedMeals] = useState<Meal[]>([]);
   const [weeklyData, setWeeklyData] = useState<DailyData[]>([]);
-
-  // Load profile data when user changes
+  const [totalCaloriesConsumed, setTotalCaloriesConsumed] = useState(0);
+  
   useEffect(() => {
-    const loadUserProfile = async () => {
+    const fetchProfile = async () => {
+      const user = supabase.auth.getSession();
       if (!user) {
-        setProfileLoading(false);
+        console.log("No user session found");
         return;
       }
-
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-
-        if (error) {
-          console.error('Error loading profile:', error);
-          return;
-        }
-
-        if (data) {
-          setProfile({
-            age: data.age,
-            weight: data.weight,
-            height: data.height,
-            gender: data.gender as Gender,
-            goal: data.goal as Goal,
-            dailyCalorieTarget: data.daily_calorie_target,
-            allergies: data.allergies || [],
-            receiveWaterReminders: data.receive_water_reminders || false,
-            waterReminderInterval: data.water_reminder_interval || 2,
-            dietaryPreference: data.dietary_preference as DietaryPreference || 'No Preference',
-            created: true,
-          });
-        }
-      } catch (error) {
-        console.error('Error loading profile:', error);
-      } finally {
-        setProfileLoading(false);
-      }
-    };
-
-    loadUserProfile();
-  }, [user]);
-
-  // Load today's meals when user changes
-  useEffect(() => {
-    const loadTodaysMeals = async () => {
-      if (!user) return;
-
-      try {
-        const today = new Date();
-        const startOfDay = new Date(today);
-        startOfDay.setHours(0, 0, 0, 0);
-        
-        const { data, error } = await supabase
-          .from('meal_logs')
-          .select('*')
-          .eq('user_id', user.id)
-          .gte('timestamp', startOfDay.toISOString())
-          .order('timestamp', { ascending: false });
-
-        if (error) {
-          console.error('Error loading meals:', error);
-          return;
-        }
-
-        if (data && data.length > 0) {
-          const meals: LoggedMeal[] = data.map(meal => ({
-            name: meal.name,
-            calories: meal.calories,
-            protein: meal.protein,
-            carbs: meal.carbs,
-            fat: meal.fat,
-            timestamp: new Date(meal.timestamp),
-          }));
-          
-          setLoggedMeals(meals);
-        }
-      } catch (error) {
-        console.error('Error loading meals:', error);
-      }
-    };
-
-    loadTodaysMeals();
-  }, [user]);
-
-  const fetchWeeklyData = async () => {
-    if (!user) return;
-    
-    try {
-      // Get date for 7 days ago
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
-      const fromDate = sevenDaysAgo.toISOString().split('T')[0]; // YYYY-MM-DD
       
-      // Fetch user's daily logs for the past 7 days
-      const { data, error } = await supabase
-        .from('daily_logs')
+      const { data: profileData, error } = await supabase
+        .from('profiles')
         .select('*')
-        .eq('user_id', user.id)
-        .gte('date', fromDate)
-        .order('date', { ascending: true });
+        .eq('id', (await user).data?.session?.user.id)
+        .single();
       
       if (error) {
-        throw error;
+        console.error("Error fetching profile:", error);
+      } else if (profileData) {
+        setProfile({
+          age: profileData.age,
+          weight: profileData.weight,
+          height: profileData.height,
+          gender: profileData.gender,
+          goal: profileData.goal,
+          dailyCalorieTarget: profileData.daily_calorie_target,
+          allergies: profileData.allergies,
+          receiveWaterReminders: profileData.receive_water_reminders,
+          waterReminderInterval: profileData.water_reminder_interval,
+          dietaryPreference: profileData.dietary_preference,
+          created: true,
+        });
       }
-      
-      if (data && data.length > 0) {
-        // Transform data into the format expected by the chart
-        const transformedData = data.map(log => ({
-          day: log.day,
-          calories: log.calories,
-          protein: log.protein,
-          carbs: log.carbs,
-          fat: log.fat,
-          date: new Date(log.date)
-        }));
-        
-        setWeeklyData(transformedData);
-      } else {
-        // If no data, set empty array
-        setWeeklyData([]);
-      }
-    } catch (error: any) {
-      console.error("Error fetching weekly data:", error);
-      // Set empty array on error
-      setWeeklyData([]);
-    }
-  };
-
-  const addMeal = (meal: LoggedMeal) => {
-    setLoggedMeals((prevMeals) => [...prevMeals, meal]);
-    
-    // Update today's data in the weekly data when a meal is added
-    fetchWeeklyData();
-  };
-
-  const totalCaloriesConsumed = loggedMeals.reduce(
-    (total, meal) => total + meal.calories,
-    0
-  );
-
-  // Calculate nutrient targets based on profile data
-  const getNutrientTargets = (): NutrientTargets => {
-    const { dailyCalorieTarget = 2000, goal, gender, weight } = profile;
-    
-    let proteinPerKg = 1.6; // Default
-    let carbsPercent = 0.45; // Default
-    let fatPercent = 0.25; // Default
-    
-    // Adjust based on goal
-    if (goal === 'Lose Weight') {
-      proteinPerKg = 2.0;
-      carbsPercent = 0.35;
-      fatPercent = 0.25;
-    } else if (goal === 'Build Muscle') {
-      proteinPerKg = 2.2;
-      carbsPercent = 0.45;
-      fatPercent = 0.25;
-    } else if (goal === 'Increase Weight') {
-      proteinPerKg = 1.8;
-      carbsPercent = 0.55;
-      fatPercent = 0.25;
-    }
-    
-    // Calculate targets
-    const proteinTarget = weight ? Math.round(weight * proteinPerKg) : Math.round(dailyCalorieTarget * 0.3 / 4);
-    const carbsTarget = Math.round((dailyCalorieTarget * carbsPercent) / 4);
-    const fatTarget = Math.round((dailyCalorieTarget * fatPercent) / 9);
-    
-    return {
-      protein: proteinTarget,
-      carbs: carbsTarget,
-      fat: fatTarget
     };
-  };
-
-  // Food suggestions based on profile
-  const getNewMealRecommendation = () => {
-    const { goal, gender, dietaryPreference } = profile;
-    const remainingCalories = (profile.dailyCalorieTarget || 2000) - totalCaloriesConsumed;
     
-    // Create a pool of suggestions based on dietary preference
-    const vegetarianOptions = [
-      'Greek yogurt with berries and honey',
-      'Lentil soup with whole grain bread',
-      'Chickpea curry with brown rice',
-      'Vegetable stir-fry with tofu',
-      'Quinoa bowl with roasted vegetables',
-      'Smoothie with plant protein, spinach and fruits',
-      'Cottage cheese with fruits and nuts',
-      'Peanut butter toast with banana and seeds'
-    ];
-    
-    const nonVegOptions = [
-      'Grilled chicken breast with sweet potato',
-      'Salmon with steamed vegetables',
-      'Turkey and avocado wrap',
-      'Beef stir-fry with broccoli',
-      'Protein shake with banana and oats',
-      'Tuna salad with mixed greens',
-      'Egg white omelet with vegetables',
-      'Chicken soup with vegetables'
-    ];
-    
-    const veganOptions = [
-      'Tofu scramble with vegetables',
-      'Lentil and vegetable soup',
-      'Quinoa salad with beans and vegetables',
-      'Vegan protein shake with almond milk',
-      'Chickpea and vegetable curry',
-      'Avocado toast with nutritional yeast',
-      'Tempeh stir-fry with brown rice',
-      'Overnight oats with chia seeds and fruits'
-    ];
-    
-    let options = [...vegetarianOptions, ...nonVegOptions];
-    
-    // Filter based on dietary preference
-    if (dietaryPreference === 'Vegetarian') {
-      options = vegetarianOptions;
-    } else if (dietaryPreference === 'Non-Vegetarian') {
-      options = nonVegOptions;
-    } else if (dietaryPreference === 'Vegan') {
-      options = veganOptions;
+    fetchProfile();
+  }, []);
+  
+  useEffect(() => {
+    fetchLoggedMeals();
+    fetchWeeklyData();
+  }, []);
+  
+  useEffect(() => {
+    const total = loggedMeals.reduce((sum, meal) => sum + meal.calories, 0);
+    setTotalCaloriesConsumed(total);
+  }, [loggedMeals]);
+  
+  const logMeal = async (meal: Omit<Meal, 'id'>) => {
+    const user = supabase.auth.getSession();
+    if (!user) {
+      console.error("No user session found");
+      return;
     }
     
-    // Select a random option
-    const suggestion = options[Math.floor(Math.random() * options.length)];
+    const { data, error } = await supabase.from('meals').insert([
+      {
+        ...meal,
+        user_id: (await user).data?.session?.user.id,
+      },
+    ]);
     
-    let text = `You've had ${totalCaloriesConsumed} kcal today. For your ${profile.dailyCalorieTarget} kcal goal:`;
-    let nutritionalBalance = '';
+    if (error) {
+      console.error("Error logging meal:", error);
+    } else {
+      console.log("Meal logged successfully:", data);
+      fetchLoggedMeals();
+      fetchWeeklyData();
+    }
+  };
+  
+  const deleteMeal = async (id: string) => {
+    const { error } = await supabase.from('meals').delete().eq('id', id);
     
-    if (goal === 'Increase Weight') {
-      nutritionalBalance = "Focus on calorie-dense foods rich in healthy fats and complex carbohydrates.";
-    } else if (goal === 'Lose Weight') {
-      nutritionalBalance = "Prioritize protein and fiber-rich foods to stay full while maintaining a calorie deficit.";
-    } else if (goal === 'Build Muscle') {
-      nutritionalBalance = "Ensure you're getting enough protein distributed throughout the day, with adequate carbs for energy.";
+    if (error) {
+      console.error("Error deleting meal:", error);
+    } else {
+      console.log("Meal deleted successfully:", id);
+      fetchLoggedMeals();
+      fetchWeeklyData();
+    }
+  };
+  
+  const fetchLoggedMeals = async () => {
+    const user = supabase.auth.getSession();
+    if (!user) {
+      console.log("No user session found");
+      return;
     }
     
-    return { text, suggestion, nutritionalBalance };
+    const { data, error } = await supabase
+      .from('meals')
+      .select('*')
+      .eq('user_id', (await user).data?.session?.user.id)
+      .order('timestamp', { ascending: false });
+    
+    if (error) {
+      console.error("Error fetching logged meals:", error);
+    } else if (data) {
+      const mealsWithCorrectTypes = data.map(meal => ({
+        ...meal,
+        calories: Number(meal.calories),
+        protein: Number(meal.protein),
+        carbs: Number(meal.carbs),
+        fat: Number(meal.fat),
+      }));
+      setLoggedMeals(mealsWithCorrectTypes);
+    }
   };
-
-  // Water reminder functionality
+  
+  const fetchWeeklyData = async () => {
+    const user = supabase.auth.getSession();
+    if (!user) {
+      console.log("No user session found");
+      return;
+    }
+    
+    const today = new Date();
+    const sevenDaysAgo = new Date(today.setDate(today.getDate() - 7));
+    
+    const { data, error } = await supabase
+      .from('meals')
+      .select('timestamp, calories, protein, carbs, fat')
+      .eq('user_id', (await user).data?.session?.user.id)
+      .gte('timestamp', sevenDaysAgo.toISOString())
+      .lte('timestamp', new Date().toISOString());
+    
+    if (error) {
+      console.error("Error fetching weekly data:", error);
+      return;
+    }
+    
+    // Aggregate data by day
+    const aggregatedData: { [key: string]: DailyData } = {};
+    data.forEach(meal => {
+      const day = meal.timestamp.split('T')[0];
+      if (!aggregatedData[day]) {
+        aggregatedData[day] = {
+          day: day,
+          calories: 0,
+          protein: 0,
+          carbs: 0,
+          fat: 0,
+        };
+      }
+      aggregatedData[day].calories += meal.calories;
+      aggregatedData[day].protein += meal.protein;
+      aggregatedData[day].carbs += meal.carbs;
+      aggregatedData[day].fat += meal.fat;
+    });
+    
+    // Convert aggregated data to array
+    const weeklyDataArray: DailyData[] = Object.values(aggregatedData);
+    
+    // Sort by date
+    weeklyDataArray.sort((a, b) => new Date(a.day).getTime() - new Date(b.day).getTime());
+    
+    setWeeklyData(weeklyDataArray);
+  };
+  
   const initWaterReminders = () => {
     if (!profile.receiveWaterReminders) return;
     
-    // Clear any existing reminders
-    if ('Notification' in window) {
-      console.log("Initializing water reminders");
-      
-      // Request permission
-      Notification.requestPermission().then(permission => {
-        if (permission === 'granted') {
-          scheduleWaterReminders();
-        }
-      });
-    }
-  };
-  
-  const scheduleWaterReminders = () => {
-    const hours = profile.waterReminderInterval || 2;
-    const intervalMs = hours * 60 * 60 * 1000;
+    const interval = profile.waterReminderInterval || 2;
     
-    // Schedule the first reminder
-    const now = new Date();
-    const currentHour = now.getHours();
+    // Clear any existing intervals
+    clearInterval(window.waterReminderIntervalId);
     
-    // Only schedule reminders between 8 AM and 8 PM
-    if (currentHour >= 8 && currentHour < 20) {
-      console.log(`Setting water reminder interval for every ${hours} hours`);
-      
-      // Set interval for recurring reminders
-      const timerId = setInterval(() => {
-        const currentTime = new Date();
-        const currentHour = currentTime.getHours();
-        
-        // Only show notification between 8 AM and 8 PM
-        if (currentHour >= 8 && currentHour < 20) {
-          new Notification('Water Reminder', {
-            body: 'Time to drink water! Stay hydrated for optimal health.',
-            icon: '/favicon.ico'
-          });
-        }
-      }, intervalMs);
-      
-      // Store the timer ID to clear it when needed
-      localStorage.setItem('waterReminderTimerId', timerId.toString());
-    }
-  };
-  
-  // Initialize water reminders when profile is loaded
-  useEffect(() => {
-    if (profile.created && profile.receiveWaterReminders) {
-      initWaterReminders();
-    }
-    
-    // Cleanup function
-    return () => {
-      const timerId = localStorage.getItem('waterReminderTimerId');
-      if (timerId) {
-        clearInterval(parseInt(timerId));
-        localStorage.removeItem('waterReminderTimerId');
+    // Set a new interval
+    window.waterReminderIntervalId = setInterval(() => {
+      if (Notification.permission === 'granted') {
+        new Notification("Time to Hydrate!", {
+          body: "Don't forget to drink some water!",
+          icon: "/icon.png",
+        });
       }
+    }, interval * 60 * 60 * 1000);
+  };
+  
+  const getAIRecommendation = () => {
+    const recommendations = [
+      "Try a Mediterranean Quinoa Salad with grilled chicken for a protein-packed lunch.",
+      "Consider adding a handful of almonds to your breakfast for a healthy fat boost.",
+      "How about a post-workout smoothie with spinach, banana, and protein powder?",
+      "For dinner, a baked salmon with roasted vegetables could be a great choice.",
+      "Snack on a Greek yogurt with berries to satisfy your sweet tooth healthily."
+    ];
+    
+    // Return a random recommendation
+    return recommendations[Math.floor(Math.random() * recommendations.length)];
+  };
+  
+  const getNutrientTargets = () => {
+    // Define default targets
+    let proteinTarget = 70;
+    let carbTarget = 250;
+    let fatTarget = 60;
+    let calorieTarget = profile.dailyCalorieTarget || 2000;
+    
+    // Adjust targets based on goal
+    switch (profile.goal) {
+      case 'Increase Weight':
+        proteinTarget = 80;
+        carbTarget = 300;
+        fatTarget = 70;
+        calorieTarget = profile.dailyCalorieTarget ? profile.dailyCalorieTarget + 500 : 2500;
+        break;
+      case 'Lose Weight':
+        proteinTarget = 90;
+        carbTarget = 200;
+        fatTarget = 50;
+        calorieTarget = profile.dailyCalorieTarget ? profile.dailyCalorieTarget - 500 : 1500;
+        break;
+      case 'Build Muscle':
+        proteinTarget = 120;
+        carbTarget = 280;
+        fatTarget = 70;
+        calorieTarget = profile.dailyCalorieTarget ? profile.dailyCalorieTarget + 300 : 2300;
+        break;
+      default:
+        break;
+    }
+    
+    return {
+      protein: proteinTarget,
+      carbs: carbTarget,
+      fat: fatTarget,
+      calories: calorieTarget,
     };
-  }, [profile.created, profile.receiveWaterReminders, profile.waterReminderInterval]);
+  };
+
+  const value = {
+    profile,
+    setProfile,
+    loggedMeals,
+    logMeal,
+    deleteMeal,
+    fetchLoggedMeals,
+    totalCaloriesConsumed,
+    weeklyData,
+    fetchWeeklyData,
+    initWaterReminders,
+    getAIRecommendation,
+    getNutrientTargets,
+  };
 
   return (
-    <UserContext.Provider
-      value={{
-        profile,
-        setProfile,
-        loggedMeals,
-        addMeal,
-        totalCaloriesConsumed,
-        weeklyData,
-        fetchWeeklyData,
-        initWaterReminders,
-        getNutrientTargets,
-        getNewMealRecommendation,
-      }}
-    >
+    <UserContext.Provider value={value}>
       {children}
     </UserContext.Provider>
   );
-};
-
-export const useUser = () => {
-  const context = useContext(UserContext);
-  if (context === undefined) {
-    throw new Error('useUser must be used within a UserProvider');
-  }
-  return context;
 };

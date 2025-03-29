@@ -5,9 +5,8 @@ import Header from '@/components/Header';
 import NavigationBar from '@/components/NavigationBar';
 import { useUser } from '@/context/UserContext';
 import { Progress } from '@/components/ui/progress';
-import AIRecommendation from '@/components/AIRecommendation';
 import ProfileHeader from '@/components/ProfileHeader';
-
+import AIRecommendationCard from '@/components/AIRecommendationCard';
 
 const Dashboard = () => {
   const { profile, loggedMeals, totalCaloriesConsumed } = useUser();
@@ -122,7 +121,7 @@ const Dashboard = () => {
         </div>
         
         {/* AI Recommendation Section */}
-        <AIRecommendation />
+        <AIRecommendationCard />
       </main>
       
       <NavigationBar />
