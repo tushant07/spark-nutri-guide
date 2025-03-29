@@ -13,6 +13,9 @@ export interface UserProfile {
   gender?: Gender;
   goal?: Goal;
   dailyCalorieTarget?: number;
+  allergies?: string[];
+  receiveWaterReminders?: boolean;
+  waterReminderInterval?: number;
   created: boolean;
 }
 
@@ -42,6 +45,7 @@ interface UserContextType {
   totalCaloriesConsumed: number;
   weeklyData: DailyData[];
   fetchWeeklyData: () => Promise<void>;
+  initWaterReminders: () => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -84,6 +88,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             gender: data.gender as Gender,
             goal: data.goal as Goal,
             dailyCalorieTarget: data.daily_calorie_target,
+            allergies: data.allergies || [],
+            receiveWaterReminders: data.receive_water_reminders || false,
+            waterReminderInterval: data.water_reminder_interval || 2,
             created: true,
           });
         }
@@ -195,6 +202,70 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     0
   );
 
+  // Water reminder functionality
+  const initWaterReminders = () => {
+    if (!profile.receiveWaterReminders) return;
+    
+    // Clear any existing reminders
+    if ('Notification' in window) {
+      console.log("Initializing water reminders");
+      
+      // Request permission
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          scheduleWaterReminders();
+        }
+      });
+    }
+  };
+  
+  const scheduleWaterReminders = () => {
+    const hours = profile.waterReminderInterval || 2;
+    const intervalMs = hours * 60 * 60 * 1000;
+    
+    // Schedule the first reminder
+    const now = new Date();
+    const currentHour = now.getHours();
+    
+    // Only schedule reminders between 8 AM and 8 PM
+    if (currentHour >= 8 && currentHour < 20) {
+      console.log(`Setting water reminder interval for every ${hours} hours`);
+      
+      // Set interval for recurring reminders
+      const timerId = setInterval(() => {
+        const currentTime = new Date();
+        const currentHour = currentTime.getHours();
+        
+        // Only show notification between 8 AM and 8 PM
+        if (currentHour >= 8 && currentHour < 20) {
+          new Notification('Water Reminder', {
+            body: 'Time to drink water! Stay hydrated for optimal health.',
+            icon: '/favicon.ico'
+          });
+        }
+      }, intervalMs);
+      
+      // Store the timer ID to clear it when needed
+      localStorage.setItem('waterReminderTimerId', timerId.toString());
+    }
+  };
+  
+  // Initialize water reminders when profile is loaded
+  useEffect(() => {
+    if (profile.created && profile.receiveWaterReminders) {
+      initWaterReminders();
+    }
+    
+    // Cleanup function
+    return () => {
+      const timerId = localStorage.getItem('waterReminderTimerId');
+      if (timerId) {
+        clearInterval(parseInt(timerId));
+        localStorage.removeItem('waterReminderTimerId');
+      }
+    };
+  }, [profile.created, profile.receiveWaterReminders, profile.waterReminderInterval]);
+
   return (
     <UserContext.Provider
       value={{
@@ -205,6 +276,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         totalCaloriesConsumed,
         weeklyData,
         fetchWeeklyData,
+        initWaterReminders,
       }}
     >
       {children}

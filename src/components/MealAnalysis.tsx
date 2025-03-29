@@ -31,7 +31,7 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
   const [isLoggingMeal, setIsLoggingMeal] = useState(false);
   
   // Extract profile data for health recommendations
-  const { age, height, weight, goal } = profile;
+  const { age, height, weight, goal, allergies = [] } = profile;
   
   // Check if we have valid meal data
   const hasValidMealData = mealData && 
@@ -40,6 +40,55 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
     mealData.protein >= 0 && 
     mealData.carbs >= 0 && 
     mealData.fat >= 0;
+  
+  // Check for allergen matches
+  const detectAllergens = () => {
+    if (!hasValidMealData || !mealData || allergies.length === 0) return [];
+    
+    const detectedAllergens: string[] = [];
+    
+    // Check allergens field
+    if (mealData.allergens && mealData.allergens.length > 0) {
+      for (const allergen of allergies) {
+        const allergenLower = allergen.toLowerCase();
+        if (mealData.allergens.some(a => a.toLowerCase().includes(allergenLower))) {
+          detectedAllergens.push(allergen);
+        }
+      }
+    }
+    
+    // Check ingredients field
+    if (mealData.ingredients && mealData.ingredients.length > 0) {
+      for (const allergen of allergies) {
+        const allergenLower = allergen.toLowerCase();
+        if (mealData.ingredients.some(i => i.toLowerCase().includes(allergenLower))) {
+          if (!detectedAllergens.includes(allergen)) {
+            detectedAllergens.push(allergen);
+          }
+        }
+      }
+    }
+    
+    // Check food name and description
+    for (const allergen of allergies) {
+      const allergenLower = allergen.toLowerCase();
+      if (mealData.name.toLowerCase().includes(allergenLower)) {
+        if (!detectedAllergens.includes(allergen)) {
+          detectedAllergens.push(allergen);
+        }
+      }
+      
+      if (mealData.food_description && mealData.food_description.toLowerCase().includes(allergenLower)) {
+        if (!detectedAllergens.includes(allergen)) {
+          detectedAllergens.push(allergen);
+        }
+      }
+    }
+    
+    return detectedAllergens;
+  };
+  
+  const matchedAllergens = detectAllergens();
   
   // Generate health insight based on user profile and meal data
   const generateHealthInsight = () => {
@@ -176,15 +225,13 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
   }
   
   // Determine the title based on whether it's packaged food or not
-  const title = mealData.is_packaged ? mealData.name : "Detected Meal";
+  const title = mealData.is_packaged ? "FOOD LABEL DETECTED" : "DETECTED MEAL";
   
   return (
     <div className="glass-card rounded-xl p-6 animate-scale-in">
       <div className="flex items-center mb-3">
         <div className="w-2 h-2 rounded-full bg-spark-500 mr-2"></div>
-        <h3 className="text-sm font-medium text-gray-500">
-          {mealData.is_packaged ? "FOOD LABEL DETECTED" : "DETECTED MEAL"}
-        </h3>
+        <h3 className="text-sm font-medium text-gray-500">{title}</h3>
         {mealData.is_packaged && (
           <div className="ml-2 px-2 py-0.5 bg-blue-100 rounded-full flex items-center">
             <Tag className="h-3 w-3 mr-1 text-blue-500" />
@@ -207,9 +254,22 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
         </div>
       )}
       
+      {/* Allergy alert for matched allergens */}
+      {matchedAllergens.length > 0 && (
+        <div className="mb-4 p-3 bg-red-100 rounded-lg border border-red-200">
+          <div className="flex items-center text-sm text-red-600 mb-1">
+            <AlertTriangle className="h-4 w-4 mr-1" />
+            <span className="font-semibold">Allergy Alert!</span>
+          </div>
+          <p className="text-sm text-red-700">
+            This food may contain {matchedAllergens.join(', ')}, which you've listed as allergens.
+          </p>
+        </div>
+      )}
+      
       {mealData.allergens && mealData.allergens.length > 0 && (
-        <div className="mb-4 p-3 bg-red-50 rounded-lg border border-red-100">
-          <div className="flex items-center text-sm text-red-500 mb-1">
+        <div className="mb-4 p-3 bg-amber-50 rounded-lg border border-amber-100">
+          <div className="flex items-center text-sm text-amber-500 mb-1">
             <AlertTriangle className="h-4 w-4 mr-1" />
             <span>Allergen Information</span>
           </div>

@@ -1,5 +1,6 @@
 
 import { useUser } from '@/context/UserContext';
+import { AlertTriangle } from 'lucide-react';
 
 interface AIRecommendationProps {
   recommendation?: {
@@ -11,7 +12,14 @@ interface AIRecommendationProps {
 
 const AIRecommendation = ({ recommendation }: AIRecommendationProps) => {
   const { profile, totalCaloriesConsumed } = useUser();
-  const { dailyCalorieTarget = 2000, age, height, weight, gender } = profile;
+  const { 
+    dailyCalorieTarget = 2000, 
+    age, 
+    height, 
+    weight, 
+    gender,
+    allergies = []
+  } = profile;
   
   // Calculate ideal weight range based on height, age and gender using BMI
   const calculateIdealWeightRange = () => {
@@ -85,6 +93,41 @@ const AIRecommendation = ({ recommendation }: AIRecommendationProps) => {
   
   const weightRecommendation = getWeightRecommendation();
   
+  // Calculate ideal daily calorie intake based on user profile
+  const calculateIdealCalories = () => {
+    if (!age || !weight || !height || !gender) return null;
+    
+    // Calculate BMR using Mifflin-St Jeor Equation
+    let bmr;
+    if (gender === 'Male') {
+      bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+    } else {
+      bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+    }
+    
+    // Apply activity multiplier (assuming moderate activity)
+    const maintainCalories = Math.round(bmr * 1.55);
+    
+    // Adjust based on goal
+    let goalCalories = maintainCalories;
+    const { goal } = profile;
+    
+    if (goal === 'Increase Weight') {
+      goalCalories = maintainCalories + 500;
+    } else if (goal === 'Lose Weight') {
+      goalCalories = maintainCalories - 500;
+    } else if (goal === 'Build Muscle') {
+      goalCalories = maintainCalories + 300;
+    }
+    
+    return {
+      maintain: maintainCalories,
+      goal: goalCalories
+    };
+  };
+  
+  const idealCalories = calculateIdealCalories();
+  
   // If we have an AI recommendation, use it, otherwise generate a default
   const getDefaultRecommendation = (): {text: string, suggestion: string, nutritionalBalance: string} => {
     const { goal } = profile;
@@ -133,10 +176,41 @@ const AIRecommendation = ({ recommendation }: AIRecommendationProps) => {
         <p className="font-medium text-spark-800">{finalRecommendation.suggestion}</p>
       </div>
       
+      {idealCalories && (
+        <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-100">
+          <h4 className="font-medium text-green-700 mb-1">Daily Calorie Target</h4>
+          <p className="text-sm text-gray-700">
+            Based on your age, weight, height, and gender, your maintenance calorie need is approximately {idealCalories.maintain} kcal/day.
+          </p>
+          <p className="text-sm text-gray-700 mt-1">
+            For your goal to {profile.goal?.toLowerCase()}, we recommend a daily target of {idealCalories.goal} kcal.
+          </p>
+        </div>
+      )}
+      
       {weightRecommendation && (
         <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
           <h4 className="font-medium text-blue-700 mb-1">Weight Analysis</h4>
           <p className="text-sm text-gray-700">{weightRecommendation}</p>
+        </div>
+      )}
+      
+      {allergies.length > 0 && (
+        <div className="mt-4 p-4 bg-amber-50 rounded-lg border border-amber-100">
+          <div className="flex items-center text-amber-700 mb-1">
+            <AlertTriangle className="h-4 w-4 mr-1" />
+            <h4 className="font-medium">Your Allergies</h4>
+          </div>
+          <div className="flex flex-wrap gap-1 mt-1">
+            {allergies.map((allergy, index) => (
+              <span key={index} className="px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full text-xs">
+                {allergy}
+              </span>
+            ))}
+          </div>
+          <p className="text-xs text-gray-700 mt-2">
+            Be careful with these ingredients. We'll alert you if they're detected in your food.
+          </p>
         </div>
       )}
       
