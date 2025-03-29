@@ -11,10 +11,17 @@ import { useToast } from '@/hooks/use-toast';
 import NavigationBar from '@/components/NavigationBar';
 
 const Profile = () => {
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const { profile, initWaterReminders } = useUser();
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  useEffect(() => {
+    // If no user, redirect to sign-in
+    if (!user) {
+      navigate('/sign-in');
+    }
+  }, [user, navigate]);
   
   const handleLogout = async () => {
     try {
