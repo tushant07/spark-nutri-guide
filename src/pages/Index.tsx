@@ -1,34 +1,27 @@
+
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUser } from '@/context/UserContext';
 import { useAuth } from '@/context/AuthContext';
 
 const Index = () => {
   const navigate = useNavigate();
-  const { profile } = useUser();
   const { user, loading } = useAuth();
   
   useEffect(() => {
     if (!loading) {
-      console.log("Index page - Auth state:", { user: !!user, profileCreated: profile.created });
+      console.log("Index page - Auth state:", { user: !!user });
       
       if (user) {
-        // If profile is already created, redirect to dashboard
-        if (profile.created) {
-          console.log("User with profile detected, navigating to dashboard");
-          navigate('/dashboard');
-        } else {
-          // Otherwise redirect to profile creation
-          console.log("User without profile detected, navigating to profile creation");
-          navigate('/profile');
-        }
+        // Directly navigate to dashboard if user is logged in
+        console.log("User detected, navigating to dashboard");
+        navigate('/dashboard');
       } else {
-        // If not signed in, redirect to sign-in immediately without delay
+        // If not signed in, redirect to sign-in
         console.log("No user detected, navigating to sign-in");
         navigate('/sign-in');
       }
     }
-  }, [navigate, profile.created, user, loading]);
+  }, [navigate, user, loading]);
   
   return (
     <div className="min-h-screen gradient-background flex flex-col items-center justify-center px-6">

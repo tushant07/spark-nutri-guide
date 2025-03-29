@@ -9,8 +9,6 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute = ({ redirectTo = "/sign-in" }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
-  const { profile } = useUser();
-  const location = useLocation();
   
   if (loading) {
     return (
@@ -24,18 +22,12 @@ export const ProtectedRoute = ({ redirectTo = "/sign-in" }: ProtectedRouteProps)
     return <Navigate to={redirectTo} replace />;
   }
   
-  // If user hasn't completed profile setup and isn't on the profile page, redirect to profile
-  if (!profile.created && location.pathname !== "/profile") {
-    console.log("User hasn't completed profile, redirecting to profile page");
-    return <Navigate to="/profile" replace />;
-  }
-  
+  // Removed the profile check logic - all authenticated users proceed directly
   return <Outlet />;
 };
 
 export const PublicOnly = ({ redirectTo = "/dashboard" }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
-  const { profile } = useUser();
   
   if (loading) {
     return (
@@ -46,14 +38,8 @@ export const PublicOnly = ({ redirectTo = "/dashboard" }: ProtectedRouteProps) =
   }
   
   if (user) {
-    // If profile is created, navigate to dashboard, otherwise to profile
-    if (profile.created) {
-      console.log("User logged in with profile, redirecting to dashboard");
-      return <Navigate to={redirectTo} replace />;
-    } else {
-      console.log("User logged in without profile, redirecting to profile");
-      return <Navigate to="/profile" replace />;
-    }
+    // All logged in users now go directly to dashboard without profile check
+    return <Navigate to={redirectTo} replace />;
   }
   
   return <Outlet />;
