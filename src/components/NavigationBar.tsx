@@ -27,7 +27,7 @@ const NavigationBar = () => {
       transition: { 
         duration: 0.3,
         repeat: Infinity,
-        repeatType: "reverse" 
+        repeatType: "reverse" as const
       }
     }
   };
