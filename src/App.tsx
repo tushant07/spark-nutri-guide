@@ -27,14 +27,14 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              {/* Public routes */}
+              {/* Public routes - will redirect to dashboard if logged in with completed profile */}
               <Route element={<PublicOnly />}>
                 <Route path="/" element={<Index />} />
                 <Route path="/sign-in" element={<SignIn />} />
                 <Route path="/sign-up" element={<SignUp />} />
               </Route>
               
-              {/* Protected routes */}
+              {/* Protected routes - requires authentication */}
               <Route element={<ProtectedRoute />}>
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/dashboard" element={<Dashboard />} />
