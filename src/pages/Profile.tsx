@@ -61,9 +61,12 @@ const Profile = () => {
             </Button>
           )
         });
+      } else if (Notification.permission === 'granted') {
+        // If permission is already granted, initialize reminders
+        initWaterReminders();
       }
     }
-  }, [profile.receiveWaterReminders]);
+  }, [profile.receiveWaterReminders, profile.waterReminderInterval]);
   
   return (
     <div className="min-h-screen gradient-background pb-20">

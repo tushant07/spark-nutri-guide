@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { List } from 'lucide-react';
 import { DailyData } from '@/context/UserContext';
+import { useUser } from '@/context/UserContext';
 
 interface NutrientHighlightsProps {
   weeklyData: DailyData[];
@@ -10,6 +11,9 @@ interface NutrientHighlightsProps {
 }
 
 const NutrientHighlights = ({ weeklyData, goalType }: NutrientHighlightsProps) => {
+  const { getNutrientTargets } = useUser();
+  const targets = getNutrientTargets();
+  
   // Calculate nutrient averages only if data exists
   const avgProtein = weeklyData.length > 0 
     ? Math.round(weeklyData.reduce((sum, day) => sum + day.protein, 0) / weeklyData.length) 
@@ -63,20 +67,24 @@ const NutrientHighlights = ({ weeklyData, goalType }: NutrientHighlightsProps) =
             <TableRow>
               <TableHead>Nutrient</TableHead>
               <TableHead className="text-right">Daily Average</TableHead>
+              <TableHead className="text-right">Target</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableRow>
               <TableCell className="font-medium">Protein</TableCell>
               <TableCell className="text-right">{avgProtein}g</TableCell>
+              <TableCell className="text-right">{targets.protein}g</TableCell>
             </TableRow>
             <TableRow>
               <TableCell className="font-medium">Carbs</TableCell>
               <TableCell className="text-right">{avgCarbs}g</TableCell>
+              <TableCell className="text-right">{targets.carbs}g</TableCell>
             </TableRow>
             <TableRow>
               <TableCell className="font-medium">Fat</TableCell>
               <TableCell className="text-right">{avgFat}g</TableCell>
+              <TableCell className="text-right">{targets.fat}g</TableCell>
             </TableRow>
           </TableBody>
         </Table>

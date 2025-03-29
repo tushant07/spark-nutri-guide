@@ -81,32 +81,44 @@ export type Database = {
       profiles: {
         Row: {
           age: number | null
+          allergies: string[] | null
           created_at: string
           daily_calorie_target: number | null
+          dietary_preference: string | null
           gender: string | null
           goal: string | null
           height: number | null
           id: string
+          receive_water_reminders: boolean | null
+          water_reminder_interval: number | null
           weight: number | null
         }
         Insert: {
           age?: number | null
+          allergies?: string[] | null
           created_at?: string
           daily_calorie_target?: number | null
+          dietary_preference?: string | null
           gender?: string | null
           goal?: string | null
           height?: number | null
           id: string
+          receive_water_reminders?: boolean | null
+          water_reminder_interval?: number | null
           weight?: number | null
         }
         Update: {
           age?: number | null
+          allergies?: string[] | null
           created_at?: string
           daily_calorie_target?: number | null
+          dietary_preference?: string | null
           gender?: string | null
           goal?: string | null
           height?: number | null
           id?: string
+          receive_water_reminders?: boolean | null
+          water_reminder_interval?: number | null
           weight?: number | null
         }
         Relationships: []

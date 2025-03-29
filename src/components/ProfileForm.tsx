@@ -29,6 +29,7 @@ const ProfileForm = () => {
     allergies: [],
     receiveWaterReminders: false,
     waterReminderInterval: '2',
+    dietaryPreference: 'No Preference',
   });
   const [submitting, setSubmitting] = useState(false);
   const [newAllergy, setNewAllergy] = useState('');
@@ -44,6 +45,7 @@ const ProfileForm = () => {
         allergies: profile.allergies || [],
         receiveWaterReminders: profile.receiveWaterReminders || false,
         waterReminderInterval: profile.waterReminderInterval?.toString() || '2',
+        dietaryPreference: profile.dietaryPreference || 'No Preference',
       });
     }
   }, [profile, user]);
@@ -122,6 +124,7 @@ const ProfileForm = () => {
       const allergies = formData.allergies;
       const receiveWaterReminders = formData.receiveWaterReminders;
       const waterReminderInterval = parseInt(formData.waterReminderInterval);
+      const dietaryPreference = formData.dietaryPreference;
       
       const dailyCalorieTarget = calculateCalorieTarget(goal, weight, height, age, gender);
       
@@ -135,7 +138,8 @@ const ProfileForm = () => {
         daily_calorie_target: dailyCalorieTarget,
         allergies,
         receive_water_reminders: receiveWaterReminders,
-        water_reminder_interval: waterReminderInterval
+        water_reminder_interval: waterReminderInterval,
+        dietary_preference: dietaryPreference
       });
       
       if (error) {
@@ -152,6 +156,7 @@ const ProfileForm = () => {
         allergies,
         receiveWaterReminders,
         waterReminderInterval,
+        dietaryPreference,
         created: true,
       });
       
@@ -267,6 +272,25 @@ const ProfileForm = () => {
               <option value="Increase Weight">Increase Weight</option>
               <option value="Lose Weight">Lose Weight</option>
               <option value="Build Muscle">Build Muscle</option>
+            </select>
+          </div>
+          
+          <div>
+            <label htmlFor="dietaryPreference" className="block text-sm font-medium text-gray-700 mb-1">
+              Dietary Preference
+            </label>
+            <select
+              id="dietaryPreference"
+              name="dietaryPreference"
+              required
+              value={formData.dietaryPreference}
+              onChange={handleChange}
+              className="form-input"
+            >
+              <option value="No Preference">No Preference</option>
+              <option value="Vegetarian">Vegetarian</option>
+              <option value="Non-Vegetarian">Non-Vegetarian</option>
+              <option value="Vegan">Vegan</option>
             </select>
           </div>
           

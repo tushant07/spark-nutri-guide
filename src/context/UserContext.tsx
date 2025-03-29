@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 
 type Goal = 'Increase Weight' | 'Lose Weight' | 'Build Muscle';
 type Gender = 'Male' | 'Female' | 'Other';
+type DietaryPreference = 'No Preference' | 'Vegetarian' | 'Non-Vegetarian' | 'Vegan';
 
 export interface UserProfile {
   age?: number;
@@ -16,6 +17,7 @@ export interface UserProfile {
   allergies?: string[];
   receiveWaterReminders?: boolean;
   waterReminderInterval?: number;
+  dietaryPreference?: DietaryPreference;
   created: boolean;
 }
 
@@ -37,6 +39,12 @@ export interface DailyData {
   date: Date;
 }
 
+export interface NutrientTargets {
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
 interface UserContextType {
   profile: UserProfile;
   setProfile: React.Dispatch<React.SetStateAction<UserProfile>>;
@@ -46,6 +54,8 @@ interface UserContextType {
   weeklyData: DailyData[];
   fetchWeeklyData: () => Promise<void>;
   initWaterReminders: () => void;
+  getNutrientTargets: () => NutrientTargets;
+  getNewMealRecommendation: () => { text: string; suggestion: string; nutritionalBalance: string };
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -91,6 +101,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             allergies: data.allergies || [],
             receiveWaterReminders: data.receive_water_reminders || false,
             waterReminderInterval: data.water_reminder_interval || 2,
+            dietaryPreference: data.dietary_preference as DietaryPreference || 'No Preference',
             created: true,
           });
         }
@@ -202,6 +213,108 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     0
   );
 
+  // Calculate nutrient targets based on profile data
+  const getNutrientTargets = (): NutrientTargets => {
+    const { dailyCalorieTarget = 2000, goal, gender, weight } = profile;
+    
+    let proteinPerKg = 1.6; // Default
+    let carbsPercent = 0.45; // Default
+    let fatPercent = 0.25; // Default
+    
+    // Adjust based on goal
+    if (goal === 'Lose Weight') {
+      proteinPerKg = 2.0;
+      carbsPercent = 0.35;
+      fatPercent = 0.25;
+    } else if (goal === 'Build Muscle') {
+      proteinPerKg = 2.2;
+      carbsPercent = 0.45;
+      fatPercent = 0.25;
+    } else if (goal === 'Increase Weight') {
+      proteinPerKg = 1.8;
+      carbsPercent = 0.55;
+      fatPercent = 0.25;
+    }
+    
+    // Calculate targets
+    const proteinTarget = weight ? Math.round(weight * proteinPerKg) : Math.round(dailyCalorieTarget * 0.3 / 4);
+    const carbsTarget = Math.round((dailyCalorieTarget * carbsPercent) / 4);
+    const fatTarget = Math.round((dailyCalorieTarget * fatPercent) / 9);
+    
+    return {
+      protein: proteinTarget,
+      carbs: carbsTarget,
+      fat: fatTarget
+    };
+  };
+
+  // Food suggestions based on profile
+  const getNewMealRecommendation = () => {
+    const { goal, gender, dietaryPreference } = profile;
+    const remainingCalories = (profile.dailyCalorieTarget || 2000) - totalCaloriesConsumed;
+    
+    // Create a pool of suggestions based on dietary preference
+    const vegetarianOptions = [
+      'Greek yogurt with berries and honey',
+      'Lentil soup with whole grain bread',
+      'Chickpea curry with brown rice',
+      'Vegetable stir-fry with tofu',
+      'Quinoa bowl with roasted vegetables',
+      'Smoothie with plant protein, spinach and fruits',
+      'Cottage cheese with fruits and nuts',
+      'Peanut butter toast with banana and seeds'
+    ];
+    
+    const nonVegOptions = [
+      'Grilled chicken breast with sweet potato',
+      'Salmon with steamed vegetables',
+      'Turkey and avocado wrap',
+      'Beef stir-fry with broccoli',
+      'Protein shake with banana and oats',
+      'Tuna salad with mixed greens',
+      'Egg white omelet with vegetables',
+      'Chicken soup with vegetables'
+    ];
+    
+    const veganOptions = [
+      'Tofu scramble with vegetables',
+      'Lentil and vegetable soup',
+      'Quinoa salad with beans and vegetables',
+      'Vegan protein shake with almond milk',
+      'Chickpea and vegetable curry',
+      'Avocado toast with nutritional yeast',
+      'Tempeh stir-fry with brown rice',
+      'Overnight oats with chia seeds and fruits'
+    ];
+    
+    let options = [...vegetarianOptions, ...nonVegOptions];
+    
+    // Filter based on dietary preference
+    if (dietaryPreference === 'Vegetarian') {
+      options = vegetarianOptions;
+    } else if (dietaryPreference === 'Non-Vegetarian') {
+      options = nonVegOptions;
+    } else if (dietaryPreference === 'Vegan') {
+      options = veganOptions;
+    }
+    
+    // Select a random option
+    const suggestion = options[Math.floor(Math.random() * options.length)];
+    
+    let text = `You've had ${totalCaloriesConsumed} kcal today. For your ${profile.dailyCalorieTarget} kcal goal:`;
+    let nutritionalBalance = '';
+    
+    if (goal === 'Increase Weight') {
+      nutritionalBalance = "Focus on calorie-dense foods rich in healthy fats and complex carbohydrates.";
+    } else if (goal === 'Lose Weight') {
+      nutritionalBalance = "Prioritize protein and fiber-rich foods to stay full while maintaining a calorie deficit.";
+    } else if (goal === 'Build Muscle') {
+      nutritionalBalance = "Ensure you're getting enough protein distributed throughout the day, with adequate carbs for energy.";
+    }
+    
+    return { text, suggestion, nutritionalBalance };
+  };
+
   // Water reminder functionality
   const initWaterReminders = () => {
     if (!profile.receiveWaterReminders) return;
@@ -277,6 +390,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         weeklyData,
         fetchWeeklyData,
         initWaterReminders,
+        getNutrientTargets,
+        getNewMealRecommendation,
       }}
     >
       {children}

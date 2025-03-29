@@ -1,6 +1,8 @@
 
 import { useUser } from '@/context/UserContext';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 
 interface AIRecommendationProps {
   recommendation?: {
@@ -10,15 +12,18 @@ interface AIRecommendationProps {
   };
 }
 
-const AIRecommendation = ({ recommendation }: AIRecommendationProps) => {
-  const { profile, totalCaloriesConsumed } = useUser();
+const AIRecommendation = ({ recommendation: initialRecommendation }: AIRecommendationProps) => {
+  const { profile, totalCaloriesConsumed, getNewMealRecommendation } = useUser();
+  const [recommendation, setRecommendation] = useState(initialRecommendation || getNewMealRecommendation());
+  
   const { 
     dailyCalorieTarget = 2000, 
     age, 
     height, 
     weight, 
     gender,
-    allergies = []
+    allergies = [],
+    dietaryPreference
   } = profile;
   
   // Calculate ideal weight range based on height, age and gender using BMI
@@ -128,53 +133,45 @@ const AIRecommendation = ({ recommendation }: AIRecommendationProps) => {
   
   const idealCalories = calculateIdealCalories();
   
-  // If we have an AI recommendation, use it, otherwise generate a default
-  const getDefaultRecommendation = (): {text: string, suggestion: string, nutritionalBalance: string} => {
-    const { goal } = profile;
-    const remainingCalories = dailyCalorieTarget - totalCaloriesConsumed;
-    
-    if (!goal) return { text: "", suggestion: "", nutritionalBalance: "" };
-    
-    // Personalized recommendations based on gender and goal
-    if (goal === 'Increase Weight') {
-      return {
-        text: `You've had ${totalCaloriesConsumed} kcal today. For your ${dailyCalorieTarget} kcal goal:`,
-        suggestion: gender === 'Male' ? 'Peanut butter toast with banana and a protein shake' : 'Avocado toast with eggs and a fruit smoothie',
-        nutritionalBalance: "Try to increase your overall calorie intake while maintaining a good balance of protein, carbs, and fats."
-      };
-    } else if (goal === 'Lose Weight') {
-      return {
-        text: `You've had ${totalCaloriesConsumed} kcal today. For your ${dailyCalorieTarget} kcal goal:`,
-        suggestion: gender === 'Male' ? 'Apple with a few almonds' : 'Greek yogurt with berries',
-        nutritionalBalance: "Focus on protein-rich foods and vegetables to stay full while maintaining a calorie deficit."
-      };
-    } else if (goal === 'Build Muscle') {
-      return {
-        text: `You've had ${totalCaloriesConsumed} kcal today. For your ${dailyCalorieTarget} kcal goal:`,
-        suggestion: gender === 'Male' ? 'Protein shake with oats' : 'Cottage cheese with fruits and nuts',
-        nutritionalBalance: "Prioritize protein intake and ensure you're getting enough calories to support muscle growth."
-      };
-    }
-    
-    return { text: "", suggestion: "", nutritionalBalance: "" };
+  // Handle refresh button click
+  const handleRefresh = () => {
+    setRecommendation(getNewMealRecommendation());
   };
   
-  const finalRecommendation = recommendation || getDefaultRecommendation();
-  
-  if (!finalRecommendation.text) return null;
+  if (!recommendation.text) return null;
   
   return (
     <div className="glass-card rounded-xl p-6 animate-scale-in">
-      <div className="flex items-center mb-3">
-        <div className="w-2 h-2 rounded-full bg-spark-500 mr-2"></div>
-        <h3 className="text-sm font-medium text-gray-500">AI RECOMMENDATION</h3>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center">
+          <div className="w-2 h-2 rounded-full bg-spark-500 mr-2"></div>
+          <h3 className="text-sm font-medium text-gray-500">AI RECOMMENDATION</h3>
+        </div>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={handleRefresh}
+          className="text-gray-500 hover:text-spark-500"
+        >
+          <RefreshCw size={16} className="mr-1" />
+          New Suggestion
+        </Button>
       </div>
       
-      <p className="text-gray-800 mb-3">{finalRecommendation.text}</p>
+      <p className="text-gray-800 mb-3">{recommendation.text}</p>
       
       <div className="bg-white rounded-lg p-4 border border-spark-100">
-        <p className="font-medium text-spark-800">{finalRecommendation.suggestion}</p>
+        <p className="font-medium text-spark-800">{recommendation.suggestion}</p>
       </div>
+      
+      {dietaryPreference && dietaryPreference !== 'No Preference' && (
+        <div className="mt-4 p-4 bg-purple-50 rounded-lg border border-purple-100">
+          <h4 className="font-medium text-purple-700 mb-1">Dietary Preference</h4>
+          <p className="text-sm text-gray-700">
+            Your meal suggestions are tailored to your {dietaryPreference.toLowerCase()} diet preference.
+          </p>
+        </div>
+      )}
       
       {idealCalories && (
         <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-100">
@@ -215,7 +212,7 @@ const AIRecommendation = ({ recommendation }: AIRecommendationProps) => {
       )}
       
       <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
-        <p className="text-sm text-gray-700">{finalRecommendation.nutritionalBalance}</p>
+        <p className="text-sm text-gray-700">{recommendation.nutritionalBalance}</p>
       </div>
       
       <div className="mt-4 pt-4 border-t border-gray-100">
