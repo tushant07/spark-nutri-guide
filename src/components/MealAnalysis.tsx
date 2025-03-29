@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useUser } from '@/context/UserContext';
 import { useAuth } from '@/context/AuthContext';
@@ -30,10 +29,8 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
   const { toast } = useToast();
   const [isLoggingMeal, setIsLoggingMeal] = useState(false);
   
-  // Extract profile data for health recommendations
   const { age, height, weight, goal, allergies = [] } = profile;
   
-  // Check if we have valid meal data
   const hasValidMealData = mealData && 
     mealData.name && 
     mealData.calories > 0 && 
@@ -41,13 +38,11 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
     mealData.carbs >= 0 && 
     mealData.fat >= 0;
   
-  // Check for allergen matches
   const detectAllergens = () => {
     if (!hasValidMealData || !mealData || allergies.length === 0) return [];
     
     const detectedAllergens: string[] = [];
     
-    // Check allergens field
     if (mealData.allergens && mealData.allergens.length > 0) {
       for (const allergen of allergies) {
         const allergenLower = allergen.toLowerCase();
@@ -57,7 +52,6 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
       }
     }
     
-    // Check ingredients field
     if (mealData.ingredients && mealData.ingredients.length > 0) {
       for (const allergen of allergies) {
         const allergenLower = allergen.toLowerCase();
@@ -69,7 +63,6 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
       }
     }
     
-    // Check food name and description
     for (const allergen of allergies) {
       const allergenLower = allergen.toLowerCase();
       if (mealData.name.toLowerCase().includes(allergenLower)) {
@@ -90,19 +83,15 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
   
   const matchedAllergens = detectAllergens();
   
-  // Generate health insight based on user profile and meal data
   const generateHealthInsight = () => {
     if (!hasValidMealData || !mealData) return null;
     
     let insight = mealData.health_insights || "";
     
-    // Add weight-related insights if profile data is available
     if (height && weight && age) {
-      // Calculate BMI (weight in kg / height in m^2)
       const heightInMeters = height / 100;
       const bmi = weight / (heightInMeters * heightInMeters);
       
-      // Add BMI-related insights
       if (goal === 'Lose Weight' && bmi > 25) {
         if (mealData.calories > 600) {
           insight += " This meal is relatively high in calories. Consider portion control or lighter alternatives to support your weight loss goals.";
@@ -147,7 +136,6 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
     setIsLoggingMeal(true);
     
     try {
-      // Save meal to Supabase
       const { error } = await supabase.from('meal_logs').insert({
         user_id: user.id,
         name: mealData.name,
@@ -161,12 +149,10 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
         throw error;
       }
       
-      // Update day's totals in daily_logs
       const today = new Date();
-      const dateString = today.toISOString().split('T')[0]; // YYYY-MM-DD
+      const dateString = today.toISOString().split('T')[0];
       const dayOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][today.getDay()];
       
-      // Get existing daily log or create new one with upsert
       const { error: upsertError } = await supabase.from('daily_logs').upsert({
         user_id: user.id,
         date: dateString,
@@ -182,13 +168,15 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
       
       if (upsertError) {
         console.error("Error updating daily log:", upsertError);
-        // Don't throw here, still consider the meal logged
       }
       
-      // Update local state
       addMeal({
-        ...mealData,
-        timestamp: new Date(),
+        name: mealData.name,
+        calories: mealData.calories,
+        protein: mealData.protein,
+        carbs: mealData.carbs,
+        fat: mealData.fat,
+        timestamp: new Date().toISOString(),
       });
       
       toast({
@@ -196,7 +184,6 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
         description: "Your meal has been saved successfully"
       });
       
-      // Call the onLogMeal callback to handle UI changes
       onLogMeal();
     } catch (error: any) {
       toast({
@@ -210,7 +197,6 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
     }
   };
   
-  // If no meal data provided, show a message
   if (!mealData) {
     return (
       <div className="glass-card rounded-xl p-6 animate-scale-in">
@@ -224,7 +210,6 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
     );
   }
   
-  // Determine the title based on whether it's packaged food or not
   const title = mealData.is_packaged ? "FOOD LABEL DETECTED" : "DETECTED MEAL";
   
   return (
@@ -254,7 +239,6 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
         </div>
       )}
       
-      {/* Allergy alert for matched allergens */}
       {matchedAllergens.length > 0 && (
         <div className="mb-4 p-3 bg-red-100 rounded-lg border border-red-200">
           <div className="flex items-center text-sm text-red-600 mb-1">

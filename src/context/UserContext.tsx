@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -49,6 +50,16 @@ interface UserContextType {
   initWaterReminders: () => void;
   getAIRecommendation: () => string;
   getNutrientTargets: () => { protein: number; carbs: number; fat: number; calories: number };
+  // Add the missing functions that were referenced
+  addMeal: (meal: Omit<Meal, 'id'>) => void;
+  getNewMealRecommendation?: () => any; // Add this if needed by AIRecommendation.tsx
+}
+
+// Define a windowWithReminder type to handle the waterReminderIntervalId
+declare global {
+  interface Window {
+    waterReminderIntervalId?: number;
+  }
 }
 
 const UserContext = createContext<UserContextType>({
@@ -64,6 +75,8 @@ const UserContext = createContext<UserContextType>({
   initWaterReminders: () => {},
   getAIRecommendation: () => "",
   getNutrientTargets: () => ({ protein: 0, carbs: 0, fat: 0, calories: 0 }),
+  addMeal: () => {},
+  getNewMealRecommendation: () => ({}),
 });
 
 export const useUser = () => useContext(UserContext);
@@ -95,13 +108,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           age: profileData.age,
           weight: profileData.weight,
           height: profileData.height,
-          gender: profileData.gender,
-          goal: profileData.goal,
+          gender: profileData.gender as 'Male' | 'Female' | 'Other', // Cast to specific type
+          goal: profileData.goal as 'Increase Weight' | 'Lose Weight' | 'Build Muscle', // Cast to specific type
           dailyCalorieTarget: profileData.daily_calorie_target,
           allergies: profileData.allergies,
           receiveWaterReminders: profileData.receive_water_reminders,
           waterReminderInterval: profileData.water_reminder_interval,
-          dietaryPreference: profileData.dietary_preference,
+          dietaryPreference: profileData.dietary_preference as DietaryPreference, // Cast to specific type
           created: true,
         });
       }
@@ -127,7 +140,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
     
-    const { data, error } = await supabase.from('meals').insert([
+    const { data, error } = await supabase.from('meal_logs').insert([
       {
         ...meal,
         user_id: (await user).data?.session?.user.id,
@@ -143,8 +156,20 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
+  // Add the addMeal function that was referenced in MealAnalysis.tsx
+  const addMeal = (meal: Omit<Meal, 'id'>) => {
+    // Create a temporary ID for the meal
+    const newMeal: Meal = {
+      ...meal,
+      id: Date.now().toString(), // Use timestamp as temporary ID
+      timestamp: new Date().toISOString()
+    };
+    
+    setLoggedMeals(prevMeals => [newMeal, ...prevMeals]);
+  };
+  
   const deleteMeal = async (id: string) => {
-    const { error } = await supabase.from('meals').delete().eq('id', id);
+    const { error } = await supabase.from('meal_logs').delete().eq('id', id);
     
     if (error) {
       console.error("Error deleting meal:", error);
@@ -163,7 +188,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     const { data, error } = await supabase
-      .from('meals')
+      .from('meal_logs') // Changed from 'meals' to 'meal_logs'
       .select('*')
       .eq('user_id', (await user).data?.session?.user.id)
       .order('timestamp', { ascending: false });
@@ -172,11 +197,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("Error fetching logged meals:", error);
     } else if (data) {
       const mealsWithCorrectTypes = data.map(meal => ({
-        ...meal,
+        id: meal.id,
+        name: meal.name,
         calories: Number(meal.calories),
         protein: Number(meal.protein),
         carbs: Number(meal.carbs),
         fat: Number(meal.fat),
+        timestamp: meal.timestamp,
       }));
       setLoggedMeals(mealsWithCorrectTypes);
     }
@@ -193,7 +220,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const sevenDaysAgo = new Date(today.setDate(today.getDate() - 7));
     
     const { data, error } = await supabase
-      .from('meals')
+      .from('meal_logs') // Changed from 'meals' to 'meal_logs'
       .select('timestamp, calories, protein, carbs, fat')
       .eq('user_id', (await user).data?.session?.user.id)
       .gte('timestamp', sevenDaysAgo.toISOString())
@@ -204,23 +231,30 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
     
+    if (!data) {
+      console.log("No data returned from query");
+      return;
+    }
+    
     // Aggregate data by day
     const aggregatedData: { [key: string]: DailyData } = {};
     data.forEach(meal => {
-      const day = meal.timestamp.split('T')[0];
-      if (!aggregatedData[day]) {
-        aggregatedData[day] = {
-          day: day,
-          calories: 0,
-          protein: 0,
-          carbs: 0,
-          fat: 0,
-        };
+      if (meal && meal.timestamp) {
+        const day = meal.timestamp.split('T')[0];
+        if (!aggregatedData[day]) {
+          aggregatedData[day] = {
+            day: day,
+            calories: 0,
+            protein: 0,
+            carbs: 0,
+            fat: 0,
+          };
+        }
+        if (meal.calories) aggregatedData[day].calories += Number(meal.calories);
+        if (meal.protein) aggregatedData[day].protein += Number(meal.protein);
+        if (meal.carbs) aggregatedData[day].carbs += Number(meal.carbs);
+        if (meal.fat) aggregatedData[day].fat += Number(meal.fat);
       }
-      aggregatedData[day].calories += meal.calories;
-      aggregatedData[day].protein += meal.protein;
-      aggregatedData[day].carbs += meal.carbs;
-      aggregatedData[day].fat += meal.fat;
     });
     
     // Convert aggregated data to array
@@ -237,11 +271,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     const interval = profile.waterReminderInterval || 2;
     
-    // Clear any existing intervals
-    clearInterval(window.waterReminderIntervalId);
+    // Clear any existing intervals - using the window property we defined
+    if (window.waterReminderIntervalId) {
+      clearInterval(window.waterReminderIntervalId);
+    }
     
     // Set a new interval
-    window.waterReminderIntervalId = setInterval(() => {
+    window.waterReminderIntervalId = window.setInterval(() => {
       if (Notification.permission === 'granted') {
         new Notification("Time to Hydrate!", {
           body: "Don't forget to drink some water!",
@@ -262,6 +298,15 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // Return a random recommendation
     return recommendations[Math.floor(Math.random() * recommendations.length)];
+  };
+  
+  // Add the getNewMealRecommendation function that was referenced
+  const getNewMealRecommendation = () => {
+    return {
+      text: "Based on your profile and preferences, here's a meal suggestion:",
+      suggestion: getAIRecommendation(),
+      nutritionalBalance: "This meal provides a good balance of proteins, healthy fats, and complex carbohydrates."
+    };
   };
   
   const getNutrientTargets = () => {
@@ -316,6 +361,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initWaterReminders,
     getAIRecommendation,
     getNutrientTargets,
+    addMeal,
+    getNewMealRecommendation,
   };
 
   return (
