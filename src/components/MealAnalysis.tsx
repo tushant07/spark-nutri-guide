@@ -4,7 +4,7 @@ import { useUser } from '@/context/UserContext';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Tag, Info } from 'lucide-react';
+import { Loader2, Tag, Info, AlertTriangle } from 'lucide-react';
 
 interface MealData {
   name: string;
@@ -14,6 +14,9 @@ interface MealData {
   fat: number;
   is_packaged?: boolean;
   food_description?: string;
+  allergens?: string[];
+  health_insights?: string;
+  ingredients?: string[];
 }
 
 interface MealAnalysisProps {
@@ -106,6 +109,7 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
         description: "Your meal has been saved successfully"
       });
       
+      // Call the onLogMeal callback to handle UI changes
       onLogMeal();
     } catch (error: any) {
       toast({
@@ -133,11 +137,16 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
     );
   }
   
+  // Determine the title based on whether it's packaged food or not
+  const title = mealData.is_packaged ? mealData.name : "Detected Meal";
+  
   return (
     <div className="glass-card rounded-xl p-6 animate-scale-in">
       <div className="flex items-center mb-3">
         <div className="w-2 h-2 rounded-full bg-spark-500 mr-2"></div>
-        <h3 className="text-sm font-medium text-gray-500">DETECTED MEAL</h3>
+        <h3 className="text-sm font-medium text-gray-500">
+          {mealData.is_packaged ? "FOOD LABEL DETECTED" : "DETECTED MEAL"}
+        </h3>
         {mealData.is_packaged && (
           <div className="ml-2 px-2 py-0.5 bg-blue-100 rounded-full flex items-center">
             <Tag className="h-3 w-3 mr-1 text-blue-500" />
@@ -157,6 +166,18 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
             <span>About this food</span>
           </div>
           <p className="text-sm text-gray-700">{mealData.food_description}</p>
+        </div>
+      )}
+      
+      {mealData.allergens && mealData.allergens.length > 0 && (
+        <div className="mb-4 p-3 bg-red-50 rounded-lg border border-red-100">
+          <div className="flex items-center text-sm text-red-500 mb-1">
+            <AlertTriangle className="h-4 w-4 mr-1" />
+            <span>Allergen Information</span>
+          </div>
+          <p className="text-sm text-gray-700">
+            Contains: {mealData.allergens.join(', ')}
+          </p>
         </div>
       )}
       
@@ -181,6 +202,28 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
           <p className="text-xl font-medium text-gray-800">{mealData.fat || 0}g</p>
         </div>
       </div>
+      
+      {mealData.health_insights && (
+        <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-100">
+          <div className="flex items-center text-sm text-green-600 mb-1">
+            <Info className="h-4 w-4 mr-1" />
+            <span>Health Insights</span>
+          </div>
+          <p className="text-sm text-gray-700">{mealData.health_insights}</p>
+        </div>
+      )}
+      
+      {mealData.ingredients && mealData.ingredients.length > 0 && (
+        <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
+          <div className="flex items-center text-sm text-gray-500 mb-1">
+            <Info className="h-4 w-4 mr-1 text-spark-500" />
+            <span>Ingredients</span>
+          </div>
+          <p className="text-sm text-gray-700">
+            {mealData.ingredients.join(', ')}
+          </p>
+        </div>
+      )}
       
       <button
         onClick={handleLogMeal}

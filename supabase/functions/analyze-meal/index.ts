@@ -84,7 +84,7 @@ app.post('/analyze-meal', async (req, res) => {
             messages: [
               {
                 role: "system",
-                content: "You are a nutrition expert that analyzes food images. Respond with ONLY a valid JSON object containing: food_name (string), is_packaged (boolean, true if food is in a package/has a nutrition label), food_description (brief description of what's in the image), nutrition: { calories (number), protein (g, number), carbs (g, number), fat (g, number) }. No text before or after the JSON."
+                content: "You are a nutrition expert that analyzes food images. Respond with ONLY a valid JSON object containing: food_name (string), is_packaged (boolean, true if food is in a package/has a nutrition label), food_description (brief description of what's in the image), ingredients (array of strings if visible), allergens (array of strings if identified on package or commonly associated with the food), health_insights (a brief analysis of health benefits or concerns), nutrition: { calories (number), protein (g, number), carbs (g, number), fat (g, number) }. If you see a nutrition label, extract the values directly from it. No text before or after the JSON."
               },
               {
                 role: "user",
@@ -98,7 +98,7 @@ app.post('/analyze-meal', async (req, res) => {
                   },
                   {
                     type: "text",
-                    text: "Analyze this food image. Identify if it's packaged food or fresh food. Provide the food name, a brief description, and nutrition information in JSON format. If you can see a nutrition label, use that data."
+                    text: "Analyze this food image. Identify if it's packaged food or fresh food. For packaged food, read the nutrition label and extract values. Provide the food name, description, ingredients list (if visible), allergen information, health insights, and complete nutrition information in JSON format."
                   },
                 ],
               },
@@ -194,7 +194,7 @@ app.post('/analyze-meal', async (req, res) => {
             messages: [
               {
                 role: "system",
-                content: "You are a nutrition expert that analyzes food images. Respond with ONLY a valid JSON object containing: food_name (string), is_packaged (boolean, true if food is in a package/has a nutrition label), food_description (brief description of what's in the image), nutrition: { calories (number), protein (g, number), carbs (g, number), fat (g, number) }. No text before or after the JSON."
+                content: "You are a nutrition expert that analyzes food images. Respond with ONLY a valid JSON object containing: food_name (string), is_packaged (boolean, true if food is in a package/has a nutrition label), food_description (brief description of what's in the image), ingredients (array of strings if visible), allergens (array of strings if identified on package or commonly associated with the food), health_insights (a brief analysis of health benefits or concerns), nutrition: { calories (number), protein (g, number), carbs (g, number), fat (g, number) }. If you see a nutrition label, extract the values directly from it. No text before or after the JSON."
               },
               {
                 role: "user",
@@ -208,7 +208,7 @@ app.post('/analyze-meal', async (req, res) => {
                   },
                   {
                     type: "text",
-                    text: "Analyze this food image. Identify if it's packaged food or fresh food. Provide the food name, a brief description, and nutrition information in JSON format. If you can see a nutrition label, use that data."
+                    text: "Analyze this food image. Identify if it's packaged food or fresh food. For packaged food, read the nutrition label and extract values. Provide the food name, description, ingredients list (if visible), allergen information, health insights, and complete nutrition information in JSON format."
                   },
                 ],
               },

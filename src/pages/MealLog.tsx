@@ -44,6 +44,7 @@ const MealLog = () => {
     setAnalysisError(null);
     setMealDetected(false); // Reset meal detection state
     setMealData(null); // Clear any previous meal data
+    setMealLogged(false); // Reset meal logged state
     
     try {
       toast({
@@ -110,7 +111,10 @@ const MealLog = () => {
           carbs: Math.round(aiMealData.nutrition?.carbs) || 0,
           fat: Math.round(aiMealData.nutrition?.fat) || 0,
           is_packaged: aiMealData.is_packaged || false,
-          food_description: aiMealData.food_description || null
+          food_description: aiMealData.food_description || null,
+          allergens: aiMealData.allergens || [],
+          health_insights: aiMealData.health_insights || null,
+          ingredients: aiMealData.ingredients || []
         };
         
         // Validate the meal data before setting it
@@ -169,16 +173,21 @@ const MealLog = () => {
       duration: 3000,
     });
     
-    // Redirect to dashboard after a short delay
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 1500);
+    // Instead of redirecting, stay on the same page and show the recommendation
   };
   
   const handleRetry = () => {
     setAnalysisError(null);
     setMealDetected(false);
     setMealData(null);
+    setMealLogged(false);
+  };
+
+  const handleTakeAnother = () => {
+    setMealLogged(false);
+    setMealDetected(false);
+    setMealData(null);
+    setAiRecommendation(null);
   };
   
   return (
@@ -295,9 +304,20 @@ const MealLog = () => {
               onLogMeal={handleLogMeal} 
             />
             
-            {mealLogged && aiRecommendation && (
+            {mealLogged && (
               <div className="mt-6">
-                <AIRecommendation recommendation={aiRecommendation} />
+                {aiRecommendation && (
+                  <AIRecommendation recommendation={aiRecommendation} />
+                )}
+                
+                <div className="mt-6 flex justify-center">
+                  <Button 
+                    onClick={handleTakeAnother} 
+                    className="bg-spark-500 hover:bg-spark-600"
+                  >
+                    Log Another Meal
+                  </Button>
+                </div>
               </div>
             )}
           </>
