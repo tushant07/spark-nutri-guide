@@ -117,6 +117,22 @@ export default {
 					'0%, 100%': { opacity: '1' },
 					'50%': { opacity: '0.85' },
 				},
+				'spin-slow': {
+					'0%': { transform: 'rotate(0deg)' },
+					'100%': { transform: 'rotate(360deg)' },
+				},
+				'bounce-gentle': {
+					'0%, 100%': { transform: 'translateY(0)' },
+					'50%': { transform: 'translateY(-5px)' },
+				},
+				'glow': {
+					'0%, 100%': { boxShadow: '0 0 5px rgba(255, 122, 0, 0.5)' },
+					'50%': { boxShadow: '0 0 20px rgba(255, 122, 0, 0.8)' },
+				},
+				'float': {
+					'0%, 100%': { transform: 'translateY(0)' },
+					'50%': { transform: 'translateY(-10px)' },
+				},
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
@@ -127,6 +143,10 @@ export default {
 				'slide-down': 'slide-down 0.4s ease-out',
 				'scale-in': 'scale-in 0.3s ease-out',
 				'pulse-subtle': 'pulse-subtle 2s ease-in-out infinite',
+				'spin-slow': 'spin-slow 6s linear infinite',
+				'bounce-gentle': 'bounce-gentle 2s ease-in-out infinite',
+				'glow': 'glow 2s ease-in-out infinite',
+				'float': 'float 3s ease-in-out infinite',
 			},
 			backdropFilter: {
 				'none': 'none',
@@ -135,6 +155,8 @@ export default {
 			boxShadow: {
 				'card': '0 4px 20px rgba(0, 0, 0, 0.05)',
 				'button': '0 2px 10px rgba(255, 122, 0, 0.2)',
+				'glow': '0 0 15px rgba(255, 122, 0, 0.5)',
+				'magic': '0 0 20px rgba(255, 122, 0, 0.3), inset 0 0 10px rgba(255, 255, 255, 0.5)',
 			},
 		}
 	},
