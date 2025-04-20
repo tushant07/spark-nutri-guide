@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const Header: React.FC = () => {
@@ -17,12 +17,20 @@ const Header: React.FC = () => {
         return 'Profile';
       case '/meal-log':
         return 'Log Meal';
+      case '/dashboard':
+        return 'Dashboard';
+      case '/weekly-insights':
+        return 'Weekly Insights';
+      case '/reset-password':
+        return 'Reset Password';
+      case '/update-password':
+        return 'Update Password';
       default:
         return 'Spark';
     }
   };
 
-  const showBackButton = path === '/profile';
+  const showBackButton = path !== '/' && path !== '/dashboard';
 
   return (
     <header className="w-full py-6 px-6 flex items-center justify-center animate-fade-in relative">
@@ -36,6 +44,17 @@ const Header: React.FC = () => {
           className="absolute left-4"
         >
           <ArrowLeft size={20} className="text-spark-500" />
+        </Button>
+      )}
+      
+      {!showBackButton && path !== '/' && (
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => navigate('/')}
+          className="absolute left-4"
+        >
+          <Home size={20} className="text-spark-500" />
         </Button>
       )}
       
