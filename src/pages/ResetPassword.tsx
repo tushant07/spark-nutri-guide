@@ -19,6 +19,7 @@ const ResetPassword = () => {
     try {
       // Get the current origin - this will use the actual domain the app is running on
       const origin = window.location.origin;
+      console.log("Reset password redirect URL:", `${origin}/update-password`);
       
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${origin}/update-password`,
