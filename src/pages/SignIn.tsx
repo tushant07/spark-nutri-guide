@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -92,6 +91,15 @@ const SignIn = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
               />
+            </div>
+
+            <div className="flex justify-end">
+              <Link
+                to="/reset-password"
+                className="text-sm text-spark-600 hover:text-spark-800"
+              >
+                Forgot password?
+              </Link>
             </div>
 
             <button

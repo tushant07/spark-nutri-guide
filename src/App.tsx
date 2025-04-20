@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,6 +13,8 @@ import WeeklyInsights from "./pages/WeeklyInsights";
 import NotFound from "./pages/NotFound";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
+import ResetPassword from "./pages/ResetPassword";
+import UpdatePassword from "./pages/UpdatePassword";
 import { ProtectedRoute, PublicOnly } from "@/components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -27,14 +28,16 @@ const App = () => (
             <Toaster />
             <Sonner />
             <Routes>
-              {/* Public routes - will redirect to dashboard if logged in with completed profile */}
+              {/* Public routes */}
               <Route element={<PublicOnly />}>
                 <Route path="/" element={<Index />} />
                 <Route path="/sign-in" element={<SignIn />} />
                 <Route path="/sign-up" element={<SignUp />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/update-password" element={<UpdatePassword />} />
               </Route>
               
-              {/* Protected routes - requires authentication */}
+              {/* Protected routes */}
               <Route element={<ProtectedRoute />}>
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/dashboard" element={<Dashboard />} />
