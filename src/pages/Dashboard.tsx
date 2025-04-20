@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import Header from '@/components/Header';
@@ -7,6 +6,7 @@ import { useUser } from '@/context/UserContext';
 import { Progress } from '@/components/ui/progress';
 import ProfileHeader from '@/components/ProfileHeader';
 import AIRecommendationCard from '@/components/AIRecommendationCard';
+import HealthMetrics from '@/components/HealthMetrics';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 const Dashboard = () => {
@@ -150,6 +150,16 @@ const Dashboard = () => {
           <p className="text-gray-600">
             Track your progress and get personalized recommendations
           </p>
+        </div>
+        
+        {/* Health Metrics Section */}
+        <div className="mb-6 animate-scale-in">
+          <HealthMetrics 
+            height={height}
+            weight={weight}
+            age={age}
+            gender={gender}
+          />
         </div>
         
         {/* Calorie Progress Section */}
