@@ -1,5 +1,5 @@
 # Welcome to Spark 
-A Diet Tracking Application
+An AI-Powered Nutrition Analyzer Application
 
 ## Project info
 
