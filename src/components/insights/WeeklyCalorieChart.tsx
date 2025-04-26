@@ -1,5 +1,5 @@
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell } from 'recharts';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { TrendingUp, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { DailyData } from '@/context/UserContext';
@@ -50,6 +50,9 @@ const WeeklyCalorieChart = ({ weeklyData }: WeeklyCalorieChartProps) => {
     );
   }
 
+  // Get today's day name in lowercase for comparison
+  const todayDayName = format(new Date(), 'EEE').toLowerCase();
+
   return (
     <Card className="mb-6 animate-scale-in">
       <CardHeader className="pb-2">
@@ -81,12 +84,19 @@ const WeeklyCalorieChart = ({ weeklyData }: WeeklyCalorieChartProps) => {
                 dataKey="calories"
                 radius={[4, 4, 0, 0]}
                 maxBarSize={50}
-                fill={(entry: DailyData) => 
-                  format(new Date(), 'EEE').toLowerCase() === entry.day.toLowerCase() 
-                    ? '#22C55E' 
-                    : '#8B5CF6'
-                }
-              />
+                fill="#8B5CF6" // Default color for all bars
+              >
+                {weeklyData.map((entry, index) => {
+                  // Check if this entry's day matches today's day
+                  const isToday = entry.day.toLowerCase() === todayDayName;
+                  return (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={isToday ? '#22C55E' : '#8B5CF6'} 
+                    />
+                  );
+                })}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
