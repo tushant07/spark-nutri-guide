@@ -5,8 +5,8 @@ import { TrendingUp, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react
 import { DailyData } from '@/context/UserContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
-import { format, subDays, addDays, startOfWeek, endOfWeek } from 'date-fns';
+import { useState, useMemo } from 'react';
+import { format, subDays, addDays, startOfWeek, endOfWeek, isWithinInterval, parseISO } from 'date-fns';
 
 interface WeeklyCalorieChartProps {
   weeklyData: DailyData[];
@@ -14,20 +14,41 @@ interface WeeklyCalorieChartProps {
 
 const WeeklyCalorieChart = ({ weeklyData }: WeeklyCalorieChartProps) => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const hasValidData = weeklyData && weeklyData.some(day => day.calories !== undefined && day.calories > 0);
   
+  // Get the earliest date from the data for navigation boundary
+  const earliestDate = useMemo(() => {
+    if (!weeklyData.length) return new Date();
+    return parseISO(weeklyData.reduce((earliest, current) => 
+      current.day < earliest ? current.day : earliest, 
+      weeklyData[0].day
+    ));
+  }, [weeklyData]);
+
   const handlePreviousWeek = () => {
     setCurrentDate(prev => subDays(prev, 7));
   };
 
   const handleNextWeek = () => {
-    setCurrentDate(prev => addDays(prev, 7));
+    const nextWeek = addDays(currentDate, 7);
+    if (nextWeek <= new Date()) {
+      setCurrentDate(nextWeek);
+    }
   };
 
   // Format the week range
   const startDate = startOfWeek(currentDate);
   const endDate = endOfWeek(currentDate);
   const weekRange = `${format(startDate, 'MMM d')} - ${format(endDate, 'MMM d')}`;
+
+  // Filter data for the current week view
+  const currentWeekData = useMemo(() => {
+    return weeklyData.filter(dayData => {
+      const date = parseISO(dayData.day);
+      return isWithinInterval(date, { start: startDate, end: endDate });
+    });
+  }, [weeklyData, startDate, endDate]);
+
+  const hasValidData = weeklyData && weeklyData.some(day => day.calories !== undefined && day.calories > 0);
 
   if (!hasValidData) {
     return (
@@ -66,7 +87,7 @@ const WeeklyCalorieChart = ({ weeklyData }: WeeklyCalorieChartProps) => {
       <CardContent>
         <div className="h-[200px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={weeklyData}>
+            <BarChart data={currentWeekData}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis 
                 dataKey="day" 
@@ -84,10 +105,9 @@ const WeeklyCalorieChart = ({ weeklyData }: WeeklyCalorieChartProps) => {
                 dataKey="calories"
                 radius={[4, 4, 0, 0]}
                 maxBarSize={50}
-                fill="#8B5CF6" // Default color for all bars
+                fill="#8B5CF6"
               >
-                {weeklyData.map((entry, index) => {
-                  // Check if this entry's day matches today's day
+                {currentWeekData.map((entry, index) => {
                   const isToday = entry.day.toLowerCase() === todayDayName;
                   return (
                     <Cell 
@@ -105,6 +125,7 @@ const WeeklyCalorieChart = ({ weeklyData }: WeeklyCalorieChartProps) => {
             variant="outline" 
             size="icon" 
             onClick={handlePreviousWeek}
+            disabled={startDate <= earliestDate}
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -115,6 +136,7 @@ const WeeklyCalorieChart = ({ weeklyData }: WeeklyCalorieChartProps) => {
             variant="outline" 
             size="icon" 
             onClick={handleNextWeek}
+            disabled={endDate >= new Date()}
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
