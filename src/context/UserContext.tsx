@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -135,7 +136,15 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
   
   useEffect(() => {
-    const total = loggedMeals.reduce((sum, meal) => sum + meal.calories, 0);
+    // Filter meals for today only when calculating total calories consumed
+    const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
+    
+    const todaysMeals = loggedMeals.filter(meal => {
+      const mealDate = meal.timestamp.split('T')[0];
+      return mealDate === today;
+    });
+    
+    const total = todaysMeals.reduce((sum, meal) => sum + meal.calories, 0);
     setTotalCaloriesConsumed(total);
   }, [loggedMeals]);
   

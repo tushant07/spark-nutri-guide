@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import Header from '@/components/Header';
@@ -13,12 +14,21 @@ const Dashboard = () => {
   const { profile, loggedMeals, totalCaloriesConsumed } = useUser();
   const { dailyCalorieTarget = 2000, age, height, weight, gender, goal } = profile;
   
-  // Calculate macros totals
-  const totalProtein = loggedMeals.reduce((total, meal) => total + meal.protein, 0);
-  const totalCarbs = loggedMeals.reduce((total, meal) => total + meal.carbs, 0);
-  const totalFat = loggedMeals.reduce((total, meal) => total + meal.fat, 0);
+  // Get today's date in YYYY-MM-DD format
+  const today = new Date().toISOString().split('T')[0];
   
-  // Calculate percentage for progress bar
+  // Filter meals for today only
+  const todaysMeals = loggedMeals.filter(meal => {
+    const mealDate = meal.timestamp.split('T')[0];
+    return mealDate === today;
+  });
+  
+  // Calculate macros totals for today only
+  const totalProtein = todaysMeals.reduce((total, meal) => total + meal.protein, 0);
+  const totalCarbs = todaysMeals.reduce((total, meal) => total + meal.carbs, 0);
+  const totalFat = todaysMeals.reduce((total, meal) => total + meal.fat, 0);
+  
+  // Calculate percentage for progress bar using filtered totalCaloriesConsumed
   const caloriePercentage = Math.min(100, (totalCaloriesConsumed / dailyCalorieTarget) * 100);
   
   // Data for macro pie chart
@@ -267,7 +277,7 @@ const Dashboard = () => {
             </div>
           ) : (
             <div className="py-4 text-center text-gray-500">
-              <p>No meals logged yet</p>
+              <p>No meals logged yet today</p>
               <p className="mt-2 text-sm">Log a meal to see your macronutrient breakdown</p>
             </div>
           )}
