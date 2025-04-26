@@ -6,7 +6,7 @@ import { DailyData } from '@/context/UserContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
-import { format, subDays, addDays } from 'date-fns';
+import { format, subDays, addDays, startOfWeek, endOfWeek } from 'date-fns';
 
 interface WeeklyCalorieChartProps {
   weeklyData: DailyData[];
@@ -23,6 +23,11 @@ const WeeklyCalorieChart = ({ weeklyData }: WeeklyCalorieChartProps) => {
   const handleNextWeek = () => {
     setCurrentDate(prev => addDays(prev, 7));
   };
+
+  // Format the week range
+  const startDate = startOfWeek(currentDate);
+  const endDate = endOfWeek(currentDate);
+  const weekRange = `${format(startDate, 'MMM d')} - ${format(endDate, 'MMM d')}`;
 
   if (!hasValidData) {
     return (
@@ -44,12 +49,6 @@ const WeeklyCalorieChart = ({ weeklyData }: WeeklyCalorieChartProps) => {
       </Card>
     );
   }
-
-  // Calculate if a day is "today"
-  const getBarColor = (day: string) => {
-    const today = format(new Date(), 'EEE').toLowerCase();
-    return day.toLowerCase() === today ? '#22C55E' : '#E5E7EB';
-  };
 
   return (
     <Card className="mb-6 animate-scale-in">
@@ -82,7 +81,11 @@ const WeeklyCalorieChart = ({ weeklyData }: WeeklyCalorieChartProps) => {
                 dataKey="calories"
                 radius={[4, 4, 0, 0]}
                 maxBarSize={50}
-                fill={(data) => getBarColor(data.day)}
+                fill={(entry: DailyData) => 
+                  format(new Date(), 'EEE').toLowerCase() === entry.day.toLowerCase() 
+                    ? '#22C55E' 
+                    : '#8B5CF6'
+                }
               />
             </BarChart>
           </ResponsiveContainer>
@@ -96,7 +99,7 @@ const WeeklyCalorieChart = ({ weeklyData }: WeeklyCalorieChartProps) => {
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="text-sm font-medium">
-            {format(currentDate, 'EEE, MMM d')}
+            {weekRange}
           </span>
           <Button 
             variant="outline" 
