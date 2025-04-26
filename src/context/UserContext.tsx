@@ -1,5 +1,4 @@
-
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 // Add DietaryPreference type definition above the Profile interface
@@ -44,15 +43,15 @@ interface UserContextType {
   logMeal: (meal: Omit<Meal, 'id'>) => Promise<void>;
   deleteMeal: (id: string) => Promise<void>;
   fetchLoggedMeals: () => Promise<void>;
+  fetchProfile: () => Promise<void>;
   totalCaloriesConsumed: number;
   weeklyData: DailyData[];
   fetchWeeklyData: () => Promise<void>;
   initWaterReminders: () => void;
   getAIRecommendation: () => string;
   getNutrientTargets: () => { protein: number; carbs: number; fat: number; calories: number };
-  // Add the missing functions that were referenced
   addMeal: (meal: Omit<Meal, 'id'>) => void;
-  getNewMealRecommendation?: () => any; // Add this if needed by AIRecommendation.tsx
+  getNewMealRecommendation?: () => any;
 }
 
 // Define a windowWithReminder type to handle the waterReminderIntervalId
@@ -69,6 +68,7 @@ const UserContext = createContext<UserContextType>({
   logMeal: async () => {},
   deleteMeal: async () => {},
   fetchLoggedMeals: async () => {},
+  fetchProfile: async () => {},
   totalCaloriesConsumed: 0,
   weeklyData: [],
   fetchWeeklyData: async () => {},
@@ -87,9 +87,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [weeklyData, setWeeklyData] = useState<DailyData[]>([]);
   const [totalCaloriesConsumed, setTotalCaloriesConsumed] = useState(0);
   
-  useEffect(() => {
-    const fetchProfile = async () => {
-      const user = supabase.auth.getSession();
+  const fetchProfile = useCallback(async () => {
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      const user = session?.session?.user;
+      
       if (!user) {
         console.log("No user session found");
         return;
@@ -98,7 +100,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data: profileData, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', (await user).data?.session?.user.id)
+        .eq('id', user.id)
         .single();
       
       if (error) {
@@ -108,20 +110,24 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           age: profileData.age,
           weight: profileData.weight,
           height: profileData.height,
-          gender: profileData.gender as 'Male' | 'Female' | 'Other', // Cast to specific type
-          goal: profileData.goal as 'Increase Weight' | 'Lose Weight' | 'Build Muscle', // Cast to specific type
+          gender: profileData.gender as 'Male' | 'Female' | 'Other',
+          goal: profileData.goal as 'Increase Weight' | 'Lose Weight' | 'Build Muscle',
           dailyCalorieTarget: profileData.daily_calorie_target,
           allergies: profileData.allergies,
           receiveWaterReminders: profileData.receive_water_reminders,
           waterReminderInterval: profileData.water_reminder_interval,
-          dietaryPreference: profileData.dietary_preference as DietaryPreference, // Cast to specific type
+          dietaryPreference: profileData.dietary_preference as DietaryPreference,
           created: true,
         });
       }
-    };
-    
-    fetchProfile();
+    } catch (error) {
+      console.error("Error in fetchProfile:", error);
+    }
   }, []);
+  
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
   
   useEffect(() => {
     fetchLoggedMeals();
@@ -134,34 +140,38 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [loggedMeals]);
   
   const logMeal = async (meal: Omit<Meal, 'id'>) => {
-    const user = supabase.auth.getSession();
-    if (!user) {
-      console.error("No user session found");
-      return;
-    }
-    
-    const { data, error } = await supabase.from('meal_logs').insert([
-      {
-        ...meal,
-        user_id: (await user).data?.session?.user.id,
-      },
-    ]);
-    
-    if (error) {
-      console.error("Error logging meal:", error);
-    } else {
-      console.log("Meal logged successfully:", data);
-      fetchLoggedMeals();
-      fetchWeeklyData();
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      const user = session?.session?.user;
+      
+      if (!user) {
+        console.error("No user session found");
+        return;
+      }
+      
+      const { data, error } = await supabase.from('meal_logs').insert([
+        {
+          ...meal,
+          user_id: user.id,
+        },
+      ]);
+      
+      if (error) {
+        console.error("Error logging meal:", error);
+      } else {
+        console.log("Meal logged successfully:", data);
+        fetchLoggedMeals();
+        fetchWeeklyData();
+      }
+    } catch (error) {
+      console.error("Error in logMeal:", error);
     }
   };
   
-  // Add the addMeal function that was referenced in MealAnalysis.tsx
   const addMeal = (meal: Omit<Meal, 'id'>) => {
-    // Create a temporary ID for the meal
     const newMeal: Meal = {
       ...meal,
-      id: Date.now().toString(), // Use timestamp as temporary ID
+      id: Date.now().toString(),
       timestamp: new Date().toISOString()
     };
     
@@ -181,89 +191,98 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
   
   const fetchLoggedMeals = async () => {
-    const user = supabase.auth.getSession();
-    if (!user) {
-      console.log("No user session found");
-      return;
-    }
-    
-    const { data, error } = await supabase
-      .from('meal_logs') // Changed from 'meals' to 'meal_logs'
-      .select('*')
-      .eq('user_id', (await user).data?.session?.user.id)
-      .order('timestamp', { ascending: false });
-    
-    if (error) {
-      console.error("Error fetching logged meals:", error);
-    } else if (data) {
-      const mealsWithCorrectTypes = data.map(meal => ({
-        id: meal.id,
-        name: meal.name,
-        calories: Number(meal.calories),
-        protein: Number(meal.protein),
-        carbs: Number(meal.carbs),
-        fat: Number(meal.fat),
-        timestamp: meal.timestamp,
-      }));
-      setLoggedMeals(mealsWithCorrectTypes);
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      const user = session?.session?.user;
+      
+      if (!user) {
+        console.log("No user session found");
+        return;
+      }
+      
+      const { data, error } = await supabase
+        .from('meal_logs')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('timestamp', { ascending: false });
+      
+      if (error) {
+        console.error("Error fetching logged meals:", error);
+      } else if (data) {
+        const mealsWithCorrectTypes = data.map(meal => ({
+          id: meal.id,
+          name: meal.name,
+          calories: Number(meal.calories),
+          protein: Number(meal.protein),
+          carbs: Number(meal.carbs),
+          fat: Number(meal.fat),
+          timestamp: meal.timestamp,
+        }));
+        setLoggedMeals(mealsWithCorrectTypes);
+      }
+    } catch (error) {
+      console.error("Error in fetchLoggedMeals:", error);
     }
   };
   
   const fetchWeeklyData = async () => {
-    const user = supabase.auth.getSession();
-    if (!user) {
-      console.log("No user session found");
-      return;
-    }
-    
-    const today = new Date();
-    const sevenDaysAgo = new Date(today.setDate(today.getDate() - 7));
-    
-    const { data, error } = await supabase
-      .from('meal_logs') // Changed from 'meals' to 'meal_logs'
-      .select('timestamp, calories, protein, carbs, fat')
-      .eq('user_id', (await user).data?.session?.user.id)
-      .gte('timestamp', sevenDaysAgo.toISOString())
-      .lte('timestamp', new Date().toISOString());
-    
-    if (error) {
-      console.error("Error fetching weekly data:", error);
-      return;
-    }
-    
-    if (!data) {
-      console.log("No data returned from query");
-      return;
-    }
-    
-    // Aggregate data by day
-    const aggregatedData: { [key: string]: DailyData } = {};
-    data.forEach(meal => {
-      if (meal && meal.timestamp) {
-        const day = meal.timestamp.split('T')[0];
-        if (!aggregatedData[day]) {
-          aggregatedData[day] = {
-            day: day,
-            calories: 0,
-            protein: 0,
-            carbs: 0,
-            fat: 0,
-          };
-        }
-        if (meal.calories) aggregatedData[day].calories += Number(meal.calories);
-        if (meal.protein) aggregatedData[day].protein += Number(meal.protein);
-        if (meal.carbs) aggregatedData[day].carbs += Number(meal.carbs);
-        if (meal.fat) aggregatedData[day].fat += Number(meal.fat);
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      const user = session?.session?.user;
+      
+      if (!user) {
+        console.log("No user session found");
+        return;
       }
-    });
-    
-    // Convert aggregated data to array
-    const weeklyDataArray: DailyData[] = Object.values(aggregatedData);
-    
-    // Sort by date
-    weeklyDataArray.sort((a, b) => new Date(a.day).getTime() - new Date(b.day).getTime());
-    
-    setWeeklyData(weeklyDataArray);
+      
+      const today = new Date();
+      const sevenDaysAgo = new Date(today.setDate(today.getDate() - 7));
+      
+      const { data, error } = await supabase
+        .from('meal_logs')
+        .select('timestamp, calories, protein, carbs, fat')
+        .eq('user_id', user.id)
+        .gte('timestamp', sevenDaysAgo.toISOString())
+        .lte('timestamp', new Date().toISOString());
+      
+      if (error) {
+        console.error("Error fetching weekly data:", error);
+        return;
+      }
+      
+      if (!data) {
+        console.log("No data returned from query");
+        return;
+      }
+      
+      const aggregatedData: { [key: string]: DailyData } = {};
+      data.forEach(meal => {
+        if (meal && meal.timestamp) {
+          const day = meal.timestamp.split('T')[0];
+          if (!aggregatedData[day]) {
+            aggregatedData[day] = {
+              day: day,
+              calories: 0,
+              protein: 0,
+              carbs: 0,
+              fat: 0,
+            };
+          }
+          if (meal.calories) aggregatedData[day].calories += Number(meal.calories);
+          if (meal.protein) aggregatedData[day].protein += Number(meal.protein);
+          if (meal.carbs) aggregatedData[day].carbs += Number(meal.carbs);
+          if (meal.fat) aggregatedData[day].fat += Number(meal.fat);
+        }
+      });
+      
+      const weeklyDataArray: DailyData[] = Object.values(aggregatedData);
+      
+      weeklyDataArray.sort((a, b) => new Date(a.day).getTime() - new Date(b.day).getTime());
+      
+      setWeeklyData(weeklyDataArray);
+    } catch (error) {
+      console.error("Error in fetchWeeklyData:", error);
+    }
   };
   
   const initWaterReminders = () => {
@@ -271,12 +290,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     const interval = profile.waterReminderInterval || 2;
     
-    // Clear any existing intervals - using the window property we defined
     if (window.waterReminderIntervalId) {
       clearInterval(window.waterReminderIntervalId);
     }
     
-    // Set a new interval
     window.waterReminderIntervalId = window.setInterval(() => {
       if (Notification.permission === 'granted') {
         new Notification("Time to Hydrate!", {
@@ -296,11 +313,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       "Snack on a Greek yogurt with berries to satisfy your sweet tooth healthily."
     ];
     
-    // Return a random recommendation
     return recommendations[Math.floor(Math.random() * recommendations.length)];
   };
   
-  // Add the getNewMealRecommendation function that was referenced
   const getNewMealRecommendation = () => {
     return {
       text: "Based on your profile and preferences, here's a meal suggestion:",
@@ -310,13 +325,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
   
   const getNutrientTargets = () => {
-    // Define default targets
     let proteinTarget = 70;
     let carbTarget = 250;
     let fatTarget = 60;
     let calorieTarget = profile.dailyCalorieTarget || 2000;
     
-    // Adjust targets based on goal
     switch (profile.goal) {
       case 'Increase Weight':
         proteinTarget = 80;
@@ -355,6 +368,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logMeal,
     deleteMeal,
     fetchLoggedMeals,
+    fetchProfile,
     totalCaloriesConsumed,
     weeklyData,
     fetchWeeklyData,

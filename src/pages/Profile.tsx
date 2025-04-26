@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import ProfileForm from '@/components/ProfileForm';
@@ -12,7 +12,8 @@ import NavigationBar from '@/components/NavigationBar';
 
 const Profile = () => {
   const { signOut, user } = useAuth();
-  const { profile, initWaterReminders } = useUser();
+  const { profile, initWaterReminders, fetchProfile } = useUser();
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -20,8 +21,28 @@ const Profile = () => {
     // If no user, redirect to sign-in
     if (!user) {
       navigate('/sign-in');
+      return;
     }
-  }, [user, navigate]);
+    
+    // Explicitly fetch profile data when the component mounts
+    const loadProfileData = async () => {
+      setIsLoading(true);
+      try {
+        await fetchProfile();
+      } catch (error) {
+        console.error("Error loading profile data:", error);
+        toast({
+          title: "Error loading profile",
+          description: "There was a problem loading your profile data",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadProfileData();
+  }, [user, navigate, fetchProfile, toast]);
   
   const handleLogout = async () => {
     try {
@@ -73,7 +94,7 @@ const Profile = () => {
         initWaterReminders();
       }
     }
-  }, [profile.receiveWaterReminders, profile.waterReminderInterval]);
+  }, [profile.receiveWaterReminders, profile.waterReminderInterval, initWaterReminders, toast]);
   
   return (
     <div className="min-h-screen gradient-background pb-20">
@@ -89,7 +110,13 @@ const Profile = () => {
           </p>
         </div>
         
-        <ProfileForm />
+        {isLoading ? (
+          <div className="flex justify-center my-8">
+            <div className="w-8 h-8 border-4 border-spark-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : (
+          <ProfileForm />
+        )}
         
         <div className="mt-8">
           <Button 
