@@ -24,20 +24,21 @@ const MealSearch = () => {
 
     setIsLoading(true);
     try {
-      const response = await fetch('https://api.calorieninjas.com/v1/nutrition?query=' + encodeURIComponent(searchQuery), {
-        method: 'GET',
-        headers: {
-          'X-Api-Key': 'QkFSCsgladrDBigma+fcYw==fOHmtzlpK4CB9MaG'
-        }
+      // Use the Edge Function approach instead of direct API call
+      // This avoids exposing the API key and potential CORS issues
+      const { data, error } = await supabase.functions.invoke('analyze-meal', {
+        body: {
+          query: searchQuery,
+          type: 'text-search'
+        },
       });
       
-      const data = await response.json();
+      if (error) throw new Error(error.message);
       
-      if (data && data.items && data.items.length > 0) {
-        const item = data.items[0];
+      if (data && data.success && data.mealData) {
         toast({
           title: "Meal Information",
-          description: `${searchQuery}: ${Math.round(item.calories)} calories`,
+          description: `${data.mealData.name}: ${Math.round(data.mealData.calories)} calories`,
         });
       } else {
         toast({
