@@ -24,12 +24,10 @@ const MealSearch = () => {
 
     setIsLoading(true);
     try {
-      // Use the Edge Function approach instead of direct API call
-      // This avoids exposing the API key and potential CORS issues
-      const { data, error } = await supabase.functions.invoke('analyze-meal', {
+      // Use our dedicated meal-search edge function
+      const { data, error } = await supabase.functions.invoke('meal-search', {
         body: {
-          query: searchQuery,
-          type: 'text-search'
+          query: searchQuery
         },
       });
       

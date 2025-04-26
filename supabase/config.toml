@@ -1,1 +1,8 @@
+
 project_id = "itccifelwqwuhzcthmqy"
+
+[functions.analyze-meal]
+verify_jwt = false
+
+[functions.meal-search]
+verify_jwt = false
