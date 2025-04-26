@@ -1,4 +1,3 @@
-
 import { useState, useRef } from 'react';
 import { Camera, Upload, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -13,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import ProfileHeader from '@/components/ProfileHeader';
+import MealSearch from '@/components/MealSearch';
 
 const MealLog = () => {
   const navigate = useNavigate();
@@ -42,9 +42,9 @@ const MealLog = () => {
   const processImage = async (file: File) => {
     setUploadingPhoto(true);
     setAnalysisError(null);
-    setMealDetected(false); // Reset meal detection state
-    setMealData(null); // Clear any previous meal data
-    setMealLogged(false); // Reset meal logged state
+    setMealDetected(false);
+    setMealData(null);
+    setMealLogged(false);
     
     try {
       toast({
@@ -52,7 +52,6 @@ const MealLog = () => {
         description: "Analyzing your meal photo with AI",
       });
       
-      // 1. Upload image to Supabase storage
       const fileName = `meal-${Date.now()}-${file.name}`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('meal-images')
@@ -63,7 +62,6 @@ const MealLog = () => {
         throw new Error(`Failed to upload image: ${uploadError.message}`);
       }
       
-      // 2. Get the public URL for the uploaded image
       const { data: publicUrlData } = supabase.storage
         .from('meal-images')
         .getPublicUrl(fileName);
@@ -71,7 +69,6 @@ const MealLog = () => {
       const imageUrl = publicUrlData.publicUrl;
       console.log("Image uploaded successfully, URL:", imageUrl);
       
-      // 3. Call our edge function to analyze the meal
       try {
         console.log("Calling analyze-meal edge function with URL:", imageUrl);
         
@@ -103,7 +100,6 @@ const MealLog = () => {
           throw new Error('Unable to detect food in the image. Please try with a clearer photo.');
         }
         
-        // Process AI detected meal data
         const detectedMeal = {
           name: aiMealData.food_name || 'Unknown Food',
           calories: Math.round(aiMealData.nutrition?.calories) || 0,
@@ -117,7 +113,6 @@ const MealLog = () => {
           ingredients: aiMealData.ingredients || []
         };
         
-        // Validate the meal data before setting it
         if (detectedMeal.calories <= 0) {
           throw new Error('Could not analyze nutritional content. Please try with a clearer photo.');
         }
@@ -133,7 +128,6 @@ const MealLog = () => {
         });
       } catch (apiError) {
         console.error("API error:", apiError);
-        // Handle error from edge function
         throw new Error(apiError.message || 'Error communicating with meal analysis service');
       }
       
@@ -146,7 +140,6 @@ const MealLog = () => {
         variant: "destructive"
       });
       
-      // Important: Always clear meal data on error
       setMealData(null);
       setMealDetected(false);
     } finally {
@@ -155,7 +148,6 @@ const MealLog = () => {
   };
   
   const handleLogMeal = () => {
-    // Only allow logging if we have valid meal data
     if (!mealData || !mealData.name || mealData.calories <= 0) {
       toast({
         title: "Cannot log meal",
@@ -172,8 +164,6 @@ const MealLog = () => {
       description: "Your nutrition data has been updated",
       duration: 3000,
     });
-    
-    // Instead of redirecting, stay on the same page and show the recommendation
   };
   
   const handleRetry = () => {
@@ -220,6 +210,8 @@ const MealLog = () => {
             </div>
           </div>
         )}
+        
+        <MealSearch />
         
         {analysisError ? (
           <div className="glass-card rounded-xl p-6 animate-fade-in">
