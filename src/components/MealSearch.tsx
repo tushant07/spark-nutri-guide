@@ -1,7 +1,6 @@
 
 import { useState } from 'react';
 import { Search } from 'lucide-react';
-import { Form } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -25,19 +24,26 @@ const MealSearch = () => {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('analyze-meal', {
-        body: {
-          query: searchQuery,
-          type: 'text'
-        },
+      const response = await fetch('https://api.calorieninjas.com/v1/nutrition?query=' + encodeURIComponent(searchQuery), {
+        method: 'GET',
+        headers: {
+          'X-Api-Key': 'QkFSCsgladrDBigma+fcYw==fOHmtzlpK4CB9MaG'
+        }
       });
-
-      if (error) throw error;
-
-      if (data && data.success) {
+      
+      const data = await response.json();
+      
+      if (data && data.items && data.items.length > 0) {
+        const item = data.items[0];
         toast({
           title: "Meal Information",
-          description: `${data.mealData.food_name}: ${data.mealData.nutrition?.calories || 0} calories`,
+          description: `${searchQuery}: ${Math.round(item.calories)} calories`,
+        });
+      } else {
+        toast({
+          title: "No Information Found",
+          description: "Couldn't find nutritional information for this meal",
+          variant: "destructive"
         });
       }
     } catch (error) {
