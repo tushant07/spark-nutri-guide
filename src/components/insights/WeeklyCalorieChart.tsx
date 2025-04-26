@@ -1,20 +1,28 @@
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { TrendingUp, AlertCircle } from 'lucide-react';
+import { TrendingUp, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { DailyData } from '@/context/UserContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { useState } from 'react';
+import { format, subDays, addDays } from 'date-fns';
 
 interface WeeklyCalorieChartProps {
   weeklyData: DailyData[];
 }
 
 const WeeklyCalorieChart = ({ weeklyData }: WeeklyCalorieChartProps) => {
-  // Check if we have any valid data with calories
+  const [currentDate, setCurrentDate] = useState(new Date());
   const hasValidData = weeklyData && weeklyData.some(day => day.calories !== undefined && day.calories > 0);
   
-  console.log("WeeklyCalorieChart - weekly data:", weeklyData);
-  console.log("WeeklyCalorieChart - has valid data:", hasValidData);
+  const handlePreviousWeek = () => {
+    setCurrentDate(prev => subDays(prev, 7));
+  };
+
+  const handleNextWeek = () => {
+    setCurrentDate(prev => addDays(prev, 7));
+  };
 
   if (!hasValidData) {
     return (
@@ -37,31 +45,66 @@ const WeeklyCalorieChart = ({ weeklyData }: WeeklyCalorieChartProps) => {
     );
   }
 
+  // Calculate if a day is "today"
+  const getBarColor = (day: string) => {
+    const today = format(new Date(), 'EEE').toLowerCase();
+    return day.toLowerCase() === today ? '#22C55E' : '#E5E7EB';
+  };
+
   return (
     <Card className="mb-6 animate-scale-in">
       <CardHeader className="pb-2">
-        <div className="flex items-center">
-          <TrendingUp className="mr-2 h-5 w-5 text-spark-500" />
-          <CardTitle className="text-lg">Calorie Trend</CardTitle>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <TrendingUp className="mr-2 h-5 w-5 text-spark-500" />
+            <CardTitle className="text-lg">Calorie Trend</CardTitle>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
         <div className="h-[200px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={weeklyData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="day" />
-              <YAxis domain={['dataMin - 100', 'dataMax + 100']} />
-              <Tooltip />
-              <Line
-                type="monotone"
-                dataKey="calories"
-                stroke="#F97316"
-                strokeWidth={2}
-                activeDot={{ r: 8 }}
+            <BarChart data={weeklyData}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis 
+                dataKey="day" 
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: '#6B7280', fontSize: 12 }}
               />
-            </LineChart>
+              <YAxis 
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: '#6B7280', fontSize: 12 }}
+                domain={[0, 'dataMax + 100']}
+              />
+              <Bar 
+                dataKey="calories"
+                radius={[4, 4, 0, 0]}
+                maxBarSize={50}
+                fill={(data) => getBarColor(data.day)}
+              />
+            </BarChart>
           </ResponsiveContainer>
+        </div>
+        <div className="flex items-center justify-between mt-4">
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={handlePreviousWeek}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-sm font-medium">
+            {format(currentDate, 'EEE, MMM d')}
+          </span>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={handleNextWeek}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
       </CardContent>
     </Card>
