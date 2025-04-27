@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CalendarCheck } from 'lucide-react';
 import { DailyData } from '@/context/UserContext';
+import { Progress } from '@/components/ui/progress';
 
 interface GoalConsistencyProps {
   weeklyData: DailyData[];
@@ -15,6 +16,11 @@ const GoalConsistency = ({ weeklyData, dailyCalorieTarget }: GoalConsistencyProp
     Math.abs(day.calories - dailyCalorieTarget) < dailyCalorieTarget * 0.1
   ).length;
   
+  // Calculate consistency percentage
+  const consistencyPercentage = weeklyData.length > 0 
+    ? Math.round((daysOnTarget / weeklyData.length) * 100) 
+    : 0;
+  
   return (
     <Card className="mb-6 animate-scale-in">
       <CardHeader className="pb-2">
@@ -24,14 +30,25 @@ const GoalConsistency = ({ weeklyData, dailyCalorieTarget }: GoalConsistencyProp
         </div>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-3">
           <div>
             <h3 className="text-xl font-bold">{daysOnTarget}/{weeklyData.length}</h3>
-            <p className="text-gray-600">days met your {dailyCalorieTarget} kcal goal</p>
+            <p className="text-gray-600 dark:text-gray-300">days met your calorie goal</p>
           </div>
           
-          <Badge variant={daysOnTarget >= 5 ? "default" : "secondary"} className="text-sm px-2 py-1">
-            {daysOnTarget >= 5 ? 'On Track' : 'Needs Focus'}
+          <div className="text-right">
+            <div className="text-xl font-bold">{dailyCalorieTarget.toLocaleString()}</div>
+            <p className="text-gray-600 dark:text-gray-300">daily target (kcal)</p>
+          </div>
+        </div>
+        
+        <Progress value={consistencyPercentage} className="h-2 mb-1" />
+        
+        <div className="flex items-center justify-between mt-1">
+          <span className="text-xs text-gray-500 dark:text-gray-400">{consistencyPercentage}% consistency</span>
+          <Badge variant={consistencyPercentage >= 70 ? "default" : "secondary"} 
+                className="text-xs px-2 py-0.5 dark:bg-opacity-80">
+            {consistencyPercentage >= 70 ? 'On Track' : 'Needs Focus'}
           </Badge>
         </div>
       </CardContent>
