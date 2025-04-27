@@ -206,11 +206,11 @@ const Dashboard = () => {
               <CardTitle className="text-lg">Daily Calorie Target</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="p-4 bg-green-50 rounded-lg border border-green-100">
-                <p className="text-sm text-gray-700">
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-800/30">
+                <p className="text-sm text-gray-700 dark:text-gray-200">
                   Based on your age, weight, height, and gender, your maintenance calorie need is approximately {idealCalories.maintain} kcal/day.
                 </p>
-                <p className="text-sm text-gray-700 mt-1">
+                <p className="text-sm text-gray-700 dark:text-gray-200 mt-1">
                   For your goal to {profile.goal?.toLowerCase() || 'maintain weight'}, we recommend a daily target of {idealCalories.goal} kcal.
                 </p>
               </div>
@@ -225,8 +225,8 @@ const Dashboard = () => {
               <CardTitle className="text-lg">Weight Analysis</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-                <p className="text-sm text-gray-700">{weightRecommendation}</p>
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800/30">
+                <p className="text-sm text-gray-700 dark:text-gray-200">{weightRecommendation}</p>
               </div>
             </CardContent>
           </Card>
