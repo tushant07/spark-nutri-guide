@@ -1,8 +1,6 @@
-
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-// Add DietaryPreference type definition above the Profile interface
 export type DietaryPreference = 'No Preference' | 'Vegetarian' | 'Non-Vegetarian' | 'Vegan';
 
 export interface Profile {
@@ -55,7 +53,6 @@ interface UserContextType {
   getNewMealRecommendation?: () => any;
 }
 
-// Define a windowWithReminder type to handle the waterReminderIntervalId
 declare global {
   interface Window {
     waterReminderIntervalId?: number;
@@ -136,8 +133,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
   
   useEffect(() => {
-    // Filter meals for today only when calculating total calories consumed
-    const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
+    const today = new Date().toISOString().split('T')[0];
     
     const todaysMeals = loggedMeals.filter(meal => {
       const mealDate = meal.timestamp.split('T')[0];
@@ -234,19 +230,21 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
-  const fetchWeeklyData = async () => {
+  const fetchWeeklyData = useCallback(async () => {
     try {
       const { data: session } = await supabase.auth.getSession();
       const user = session?.session?.user;
       
       if (!user) {
-        console.log("No user session found");
+        console.log("No user session found for fetchWeeklyData");
+        setWeeklyData([]);
         return;
       }
       
       const today = new Date();
       const sevenDaysAgo = new Date(today.setDate(today.getDate() - 7));
       
+      console.log("Fetching meal logs for weekly data...");
       const { data, error } = await supabase
         .from('meal_logs')
         .select('timestamp, calories, protein, carbs, fat')
@@ -259,8 +257,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       
-      if (!data) {
-        console.log("No data returned from query");
+      if (!data || data.length === 0) {
+        console.log("No meal logs found for weekly data");
+        setWeeklyData([]);
         return;
       }
       
@@ -288,11 +287,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       weeklyDataArray.sort((a, b) => new Date(a.day).getTime() - new Date(b.day).getTime());
       
+      console.log("Processed weekly data:", weeklyDataArray);
       setWeeklyData(weeklyDataArray);
     } catch (error) {
       console.error("Error in fetchWeeklyData:", error);
+      setWeeklyData([]);
+      throw error;
     }
-  };
+  }, []);
   
   const initWaterReminders = () => {
     if (!profile.receiveWaterReminders) return;

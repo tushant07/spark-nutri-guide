@@ -18,7 +18,8 @@ const WeeklyInsights = () => {
   const { profile, weeklyData, fetchWeeklyData } = useUser();
   const { user } = useAuth();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
   
   // Fallback to default target if no profile data yet
   const dailyCalorieTarget = profile.dailyCalorieTarget || 2000;
@@ -26,10 +27,10 @@ const WeeklyInsights = () => {
   const loadData = useCallback(async () => {
     if (!user) {
       console.log("No user found, skipping data fetch.");
+      setLoading(false);
       return;
     }
     
-    setLoading(true);
     try {
       console.log("Fetching weekly data for insights page...");
       await fetchWeeklyData();
@@ -43,13 +44,20 @@ const WeeklyInsights = () => {
       });
     } finally {
       setLoading(false);
+      setHasAttemptedFetch(true);
       console.log("Loading state set to false");
     }
-  }, [user, fetchWeeklyData, toast, weeklyData]);
+  }, [user, fetchWeeklyData, toast]);
   
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    // Only fetch data if we haven't attempted to yet or if we have a user
+    if (!hasAttemptedFetch || user) {
+      loadData();
+    } else {
+      // If we've already attempted to fetch but still don't have a user, stop loading
+      setLoading(false);
+    }
+  }, [loadData, user, hasAttemptedFetch]);
   
   const handleRefresh = async () => {
     setLoading(true);
