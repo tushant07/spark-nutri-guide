@@ -14,17 +14,23 @@ const ThemeToggle = () => {
     // Check system preference if no saved theme
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     
-    // Set initial theme
+    // Set initial theme based on saved preference or system preference
     const initialTheme = savedTheme || (prefersDark ? 'dark' : 'light');
     setTheme(initialTheme);
     
     // Apply theme to document
-    applyTheme(initialTheme);
+    if (initialTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   }, []);
 
-  // Apply theme to document and store in localStorage
-  const applyTheme = (newTheme: 'light' | 'dark') => {
-    // Add or remove dark class from document
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    
+    // Apply theme to document
     if (newTheme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
@@ -33,12 +39,6 @@ const ThemeToggle = () => {
     
     // Store theme preference
     localStorage.setItem('theme', newTheme);
-  };
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    applyTheme(newTheme);
   };
 
   return (
