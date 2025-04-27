@@ -1,6 +1,6 @@
 
 import { useNavigate } from 'react-router-dom';
-import { User, LogOut } from 'lucide-react';
+import { User } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 
@@ -14,7 +14,7 @@ const ProfileHeader = () => {
         variant="ghost" 
         size="icon"
         onClick={() => navigate('/profile')}
-        className="mr-2 bg-white/80 backdrop-blur-sm shadow-sm"
+        className="mr-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm dark:text-gray-200"
       >
         <User size={20} className="text-spark-500" />
       </Button>

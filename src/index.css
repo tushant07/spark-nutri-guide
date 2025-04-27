@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -27,33 +28,33 @@
   }
 
   .dark {
-    --background: 220 15% 16%;
+    --background: 220 25% 18%;
     --foreground: 220 10% 98%;
-    --card: 220 15% 20%;
+    --card: 220 20% 22%;
     --card-foreground: 220 10% 98%;
-    --popover: 220 15% 20%;
+    --popover: 220 20% 22%;
     --popover-foreground: 220 10% 98%;
     --primary: 28 100% 50%;
     --primary-foreground: 220 10% 98%;
-    --secondary: 220 15% 25%;
+    --secondary: 220 20% 26%;
     --secondary-foreground: 220 10% 90%;
-    --muted: 220 15% 25%;
-    --muted-foreground: 220 10% 60%;
+    --muted: 220 20% 26%;
+    --muted-foreground: 220 10% 70%;
     --accent: 28 100% 50%;
     --accent-foreground: 220 10% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 220 10% 98%;
-    --border: 220 15% 30%;
-    --input: 220 15% 30%;
+    --border: 220 20% 32%;
+    --input: 220 20% 32%;
     --ring: 28 100% 50%;
     
-    --sidebar-background: 220 15% 14%;
+    --sidebar-background: 220 20% 16%;
     --sidebar-foreground: 220 10% 98%;
     --sidebar-primary: 28 100% 50%;
     --sidebar-primary-foreground: 220 10% 98%;
     --sidebar-accent: 28 100% 50%;
     --sidebar-accent-foreground: 220 10% 98%;
-    --sidebar-border: 220 15% 30%;
+    --sidebar-border: 220 20% 32%;
     --sidebar-ring: 28 100% 50%;
   }
 
@@ -81,7 +82,7 @@
   }
 
   .dark .gradient-background {
-    background: linear-gradient(135deg, hsl(220 15% 14%) 0%, hsl(220 15% 12%) 100%);
+    background: linear-gradient(135deg, hsl(220 25% 15%) 0%, hsl(220 25% 20%) 100%);
     background-size: 200% 200%;
     animation: gradient-shift 15s ease infinite;
   }
@@ -155,12 +156,20 @@
     @apply flex flex-col items-center justify-center p-2 rounded-lg transition-all duration-200;
   }
 
+  .dark .nav-item {
+    @apply text-gray-300 hover:text-white;
+  }
+
   .nav-item.active {
     @apply text-spark-500;
   }
 
   .nav-text {
     @apply text-xs mt-1 font-medium;
+  }
+  
+  .dark .nav-text {
+    @apply text-gray-300;
   }
   
   .magic-border {
@@ -198,6 +207,57 @@
       rgba(255, 184, 108, 0.6),
       rgba(255, 122, 0, 0.4)
     );
+  }
+  
+  /* Dark mode specific styles */
+  .dark .text-gray-700,
+  .dark .text-gray-800,
+  .dark .text-gray-900 {
+    @apply text-gray-100;
+  }
+  
+  .dark .text-gray-600 {
+    @apply text-gray-300;
+  }
+  
+  .dark .text-gray-500 {
+    @apply text-gray-400;
+  }
+  
+  /* For navbar in dark theme */
+  .dark .bg-white\/60 {
+    @apply bg-gray-900/60;
+  }
+  
+  /* For headers in dark theme */
+  .dark h1, 
+  .dark h2, 
+  .dark h3, 
+  .dark h4, 
+  .dark h5, 
+  .dark h6 {
+    @apply text-gray-100;
+  }
+  
+  /* For form inputs in dark theme */
+  .dark .bg-blue-50 {
+    @apply bg-blue-900/20;
+  }
+  
+  .dark .bg-gray-200 {
+    @apply bg-gray-700;
+  }
+  
+  .dark .text-blue-800 {
+    @apply text-blue-300;
+  }
+  
+  .dark .bg-blue-100 {
+    @apply bg-blue-900/30;
+  }
+  
+  .dark .text-blue-600 {
+    @apply text-blue-400;
   }
   
   @keyframes shimmer {

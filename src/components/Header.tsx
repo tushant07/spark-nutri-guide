@@ -34,14 +34,14 @@ const Header: React.FC = () => {
 
   return (
     <header className="w-full py-6 px-6 flex items-center justify-center animate-fade-in relative">
-      <div className="absolute top-0 left-0 w-full h-full bg-white/60 backdrop-blur-md -z-10"></div>
+      <div className="absolute top-0 left-0 w-full h-full bg-white/60 dark:bg-gray-900/60 backdrop-blur-md -z-10"></div>
       
       {showBackButton && (
         <Button 
           variant="ghost" 
           size="icon" 
           onClick={() => navigate(-1)}
-          className="absolute left-4"
+          className="absolute left-4 dark:text-gray-200 dark:hover:bg-gray-800"
         >
           <ArrowLeft size={20} className="text-spark-500" />
         </Button>
@@ -52,13 +52,13 @@ const Header: React.FC = () => {
           variant="ghost" 
           size="icon" 
           onClick={() => navigate('/')}
-          className="absolute left-4"
+          className="absolute left-4 dark:text-gray-200 dark:hover:bg-gray-800"
         >
           <Home size={20} className="text-spark-500" />
         </Button>
       )}
       
-      <h1 className="text-2xl font-bold text-center text-spark-800">
+      <h1 className="text-2xl font-bold text-center text-spark-800 dark:text-white">
         {getTitle()}
         <span className="text-spark-500">.</span>
       </h1>

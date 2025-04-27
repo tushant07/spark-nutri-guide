@@ -37,7 +37,7 @@ const NavigationBar = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="fixed bottom-0 left-0 right-0 bg-white/60 backdrop-blur-xl border-t border-border py-2 px-4 z-10"
+      className="fixed bottom-0 left-0 right-0 bg-white/60 dark:bg-gray-900/70 backdrop-blur-xl border-t border-border dark:border-gray-700 py-2 px-4 z-10"
     >
       <div className="max-w-md mx-auto flex justify-around items-center relative">
         {/* Magical highlight under active item */}
@@ -53,11 +53,11 @@ const NavigationBar = () => {
           <motion.div variants={iconVariants} whileHover="hover">
             <Home 
               size={22} 
-              className={isActive('/dashboard') ? 'text-spark-500' : 'text-gray-600'} 
+              className={isActive('/dashboard') ? 'text-spark-500' : 'text-gray-600 dark:text-gray-300'} 
             />
             {isActive('/dashboard') && (
               <motion.div 
-                className="absolute inset-0 bg-spark-100 rounded-lg -z-10 opacity-30"
+                className="absolute inset-0 bg-spark-100 dark:bg-spark-900/30 rounded-lg -z-10 opacity-30"
                 layoutId="navHighlight"
                 transition={{ type: "spring", duration: 0.5 }}
               />
@@ -85,11 +85,11 @@ const NavigationBar = () => {
           <motion.div variants={iconVariants} whileHover="hover">
             <Camera 
               size={22} 
-              className={isActive('/meal-log') ? 'text-spark-500' : 'text-gray-600'} 
+              className={isActive('/meal-log') ? 'text-spark-500' : 'text-gray-600 dark:text-gray-300'} 
             />
             {isActive('/meal-log') && (
               <motion.div 
-                className="absolute inset-0 bg-spark-100 rounded-lg -z-10 opacity-30" 
+                className="absolute inset-0 bg-spark-100 dark:bg-spark-900/30 rounded-lg -z-10 opacity-30" 
                 layoutId="navHighlight"
                 transition={{ type: "spring", duration: 0.5 }}
               />
@@ -117,11 +117,11 @@ const NavigationBar = () => {
           <motion.div variants={iconVariants} whileHover="hover">
             <BarChart 
               size={22} 
-              className={isActive('/weekly-insights') ? 'text-spark-500' : 'text-gray-600'} 
+              className={isActive('/weekly-insights') ? 'text-spark-500' : 'text-gray-600 dark:text-gray-300'} 
             />
             {isActive('/weekly-insights') && (
               <motion.div 
-                className="absolute inset-0 bg-spark-100 rounded-lg -z-10 opacity-30" 
+                className="absolute inset-0 bg-spark-100 dark:bg-spark-900/30 rounded-lg -z-10 opacity-30" 
                 layoutId="navHighlight"
                 transition={{ type: "spring", duration: 0.5 }}
               />
