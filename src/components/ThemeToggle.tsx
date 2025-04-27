@@ -54,11 +54,11 @@ const ThemeToggle = () => {
       variant="outline"
       size="icon"
       onClick={toggleTheme}
-      className="fixed top-4 right-4 z-50 bg-background text-foreground border-border hover:bg-accent dark:bg-gray-800/40 dark:hover:bg-gray-700/60 dark:border-gray-700"
+      className="fixed top-4 right-4 z-50 bg-background text-foreground border-border hover:bg-accent dark:bg-gray-800 dark:hover:bg-gray-700 dark:border-gray-700 dark:text-white"
       aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
     >
       {theme === 'light' ? (
-        <Moon size={20} className="text-foreground" />
+        <Moon size={20} className="text-foreground dark:text-white" />
       ) : (
         <Sun size={20} className="text-yellow-300" />
       )}

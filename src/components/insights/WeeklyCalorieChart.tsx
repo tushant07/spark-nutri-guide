@@ -69,7 +69,7 @@ const WeeklyCalorieChart = ({ weeklyData }: WeeklyCalorieChartProps) => {
       const data = payload[0].payload as (DailyData & { formattedDay: string, fullDate: string });
       return (
         <div className="p-2 bg-white dark:bg-gray-800 shadow-md rounded-md border border-gray-200 dark:border-gray-700">
-          <p className="font-medium">{data.fullDate}</p>
+          <p className="font-medium text-gray-900 dark:text-white">{data.fullDate}</p>
           <p className="text-spark-500 font-bold">{data.calories} kcal</p>
         </div>
       );
@@ -79,11 +79,11 @@ const WeeklyCalorieChart = ({ weeklyData }: WeeklyCalorieChartProps) => {
 
   if (!hasValidData) {
     return (
-      <Card className="mb-6 animate-scale-in">
+      <Card className="mb-6 animate-scale-in bg-card dark:bg-gray-800/95 border dark:border-gray-700">
         <CardHeader className="pb-2">
           <div className="flex items-center">
             <TrendingUp className="mr-2 h-5 w-5 text-spark-500" />
-            <CardTitle className="text-lg">Calorie Trend</CardTitle>
+            <CardTitle className="text-lg text-foreground dark:text-white">Calorie Trend</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
@@ -102,12 +102,12 @@ const WeeklyCalorieChart = ({ weeklyData }: WeeklyCalorieChartProps) => {
   const today = format(new Date(), 'yyyy-MM-dd');
 
   return (
-    <Card className="mb-6 animate-scale-in">
+    <Card className="mb-6 animate-scale-in bg-card dark:bg-gray-800/95 border dark:border-gray-700">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <TrendingUp className="mr-2 h-5 w-5 text-spark-500" />
-            <CardTitle className="text-lg">Calorie Trend</CardTitle>
+            <CardTitle className="text-lg text-foreground dark:text-white">Calorie Trend</CardTitle>
           </div>
         </div>
       </CardHeader>
@@ -115,7 +115,7 @@ const WeeklyCalorieChart = ({ weeklyData }: WeeklyCalorieChartProps) => {
         <div className="h-[220px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={currentWeekData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#6B728033" />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(107, 114, 128, 0.2)" />
               <XAxis 
                 dataKey="formattedDay" 
                 axisLine={false}
@@ -142,7 +142,7 @@ const WeeklyCalorieChart = ({ weeklyData }: WeeklyCalorieChartProps) => {
                   return (
                     <Cell 
                       key={`cell-${index}`} 
-                      fill={isToday ? '#22C55E' : '#8B5CF6'} 
+                      fill={isToday ? '#22C55E' : '#FF7A00'} 
                       className="opacity-80 hover:opacity-100 transition-opacity"
                     />
                   );
@@ -158,11 +158,11 @@ const WeeklyCalorieChart = ({ weeklyData }: WeeklyCalorieChartProps) => {
             size="icon" 
             onClick={handlePreviousWeek}
             disabled={startDate <= earliestDate}
-            className="dark:bg-gray-800 dark:hover:bg-gray-700"
+            className="dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white dark:border-gray-600"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="text-sm font-medium dark:text-gray-200">
+          <span className="text-sm font-medium dark:text-white">
             {weekRange}
           </span>
           <Button 
@@ -170,7 +170,7 @@ const WeeklyCalorieChart = ({ weeklyData }: WeeklyCalorieChartProps) => {
             size="icon" 
             onClick={handleNextWeek}
             disabled={endDate >= new Date()}
-            className="dark:bg-gray-800 dark:hover:bg-gray-700"
+            className="dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white dark:border-gray-600"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>

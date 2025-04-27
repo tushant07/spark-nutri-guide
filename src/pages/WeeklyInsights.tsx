@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useCallback } from 'react';
 import { Loader2, RefreshCw } from 'lucide-react';
 import Header from '@/components/Header';
@@ -11,6 +12,7 @@ import NutrientHighlights from '@/components/insights/NutrientHighlights';
 import NoDataCard from '@/components/insights/NoDataCard';
 import NavigationBar from '@/components/NavigationBar';
 import ProfileHeader from '@/components/ProfileHeader';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const WeeklyInsights = () => {
   const { profile, weeklyData, fetchWeeklyData } = useUser();
@@ -27,7 +29,7 @@ const WeeklyInsights = () => {
       return;
     }
     
-    setLoading(false);
+    setLoading(true);
     try {
       console.log("Fetching weekly data for insights page...");
       await fetchWeeklyData();
@@ -50,7 +52,7 @@ const WeeklyInsights = () => {
   }, [loadData]);
   
   const handleRefresh = async () => {
-    setLoading(false);
+    setLoading(true);
     try {
       await fetchWeeklyData();
       toast({
@@ -80,23 +82,24 @@ const WeeklyInsights = () => {
     <div className="min-h-screen gradient-background pb-20">
       <Header />
       <ProfileHeader/>
+      <ThemeToggle />
       
       <main className="px-6 py-4 max-w-md mx-auto">
         <div className="mb-6 animate-fade-in">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold mb-2 text-gray-800">
+            <h2 className="text-2xl font-bold mb-2 text-gray-800 dark:text-white">
               Weekly Insights
             </h2>
             <Button 
               variant="outline" 
               size="icon" 
               onClick={handleRefresh} 
-              className="mb-2"
+              className="mb-2 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white dark:border-gray-600"
             >
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-300">
             Track your weekly progress and get personalized insights
           </p>
         </div>
