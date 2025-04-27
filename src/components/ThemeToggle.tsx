@@ -46,13 +46,13 @@ const ThemeToggle = () => {
       variant="outline"
       size="icon"
       onClick={toggleTheme}
-      className="fixed top-4 right-16 z-50 bg-background text-foreground border-border"
+      className="fixed top-4 right-16 z-50 bg-background text-foreground border-border hover:bg-accent"
       aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
     >
       {theme === 'light' ? (
-        <Moon size={20} />
+        <Moon size={20} className="text-foreground" />
       ) : (
-        <Sun size={20} />
+        <Sun size={20} className="text-foreground" />
       )}
     </Button>
   );
