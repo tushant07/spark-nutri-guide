@@ -9,7 +9,7 @@ const ProfileHeader = () => {
   const { user } = useAuth();
   
   return (
-    <div className="fixed top-0 right-20 p-4 z-10"> {/* Increased right position to avoid overlap with theme toggle */}
+    <div className="fixed top-0 right-10 p-4 z-10"> {/* Increased right position to avoid overlap with theme toggle */}
       <Button 
         variant="ghost" 
         size="icon"

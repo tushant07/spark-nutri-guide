@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Home } from 'lucide-react';
@@ -41,7 +40,7 @@ const Header: React.FC = () => {
           variant="ghost" 
           size="icon" 
           onClick={() => navigate(-1)}
-          className="absolute left-4 dark:text-gray-200 dark:hover:bg-gray-800"
+          className="absolute left-4 dark:text-gray-200 dark:hover:bg-gray-800 bg-white/80 dark:bg-gray-800/80 border border-gray-300 dark:border-gray-700 backdrop-blur-sm shadow-sm"
         >
           <ArrowLeft size={20} className="text-spark-500" />
         </Button>
@@ -52,7 +51,7 @@ const Header: React.FC = () => {
           variant="ghost" 
           size="icon" 
           onClick={() => navigate('/')}
-          className="absolute left-4 dark:text-gray-200 dark:hover:bg-gray-800"
+          className="absolute left-4 dark:text-gray-200 dark:hover:bg-gray-800 bg-white/80 dark:bg-gray-800/80 border border-gray-300 dark:border-gray-700 backdrop-blur-sm shadow-sm"
         >
           <Home size={20} className="text-spark-500" />
         </Button>
