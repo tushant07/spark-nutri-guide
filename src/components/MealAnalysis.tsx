@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useUser } from '@/context/UserContext';
 import { useAuth } from '@/context/AuthContext';
@@ -323,11 +322,11 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center">
           <div className="w-2 h-2 rounded-full bg-spark-500 mr-2"></div>
-          <h3 className="text-sm font-medium text-gray-500">{title}</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
           {mealData.is_packaged && (
-            <div className="ml-2 px-2 py-0.5 bg-blue-100 rounded-full flex items-center">
-              <Tag className="h-3 w-3 mr-1 text-blue-500" />
-              <span className="text-xs text-blue-500 font-medium">Packaged Food</span>
+            <div className="ml-2 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center">
+              <Tag className="h-3 w-3 mr-1 text-blue-500 dark:text-blue-300" />
+              <span className="text-xs text-blue-500 dark:text-blue-200 font-medium">Packaged Food</span>
             </div>
           )}
         </div>
@@ -342,100 +341,100 @@ const MealAnalysis = ({ mealData, onLogMeal }: MealAnalysisProps) => {
         </Badge>
       </div>
       
-      <h2 className="text-xl font-semibold mb-2 text-gray-800">
+      <h2 className="text-xl font-semibold mb-2 text-foreground">
         {mealData.name || "Unknown Food"}
       </h2>
       
       {/* Health Score Details */}
-      <div className={`mb-4 p-3 rounded-lg border ${
-        healthScore.color === 'bg-green-500' ? 'bg-green-50 border-green-100' :
-        healthScore.color === 'bg-amber-400' ? 'bg-amber-50 border-amber-100' :
-        'bg-red-50 border-red-100'
-      }`}>
+      <div className={`mb-4 p-3 rounded-lg border 
+        ${healthScore.color === 'bg-green-500' ? 'bg-green-50 dark:bg-green-900/30 border-green-100 dark:border-green-700' :
+          healthScore.color === 'bg-amber-400' ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-100 dark:border-amber-700' :
+          'bg-red-50 dark:bg-red-900/30 border-red-100 dark:border-red-700'}
+      `}>
         <div className="flex items-center text-sm mb-1">
-          <Award className={`h-4 w-4 mr-1 ${
-            healthScore.color === 'bg-green-500' ? 'text-green-500' :
-            healthScore.color === 'bg-amber-400' ? 'text-amber-500' :
-            'text-red-500'
-          }`} />
-          <span className="font-semibold">{healthScore.label}</span>
+          <Award className={`h-4 w-4 mr-1 
+            ${healthScore.color === 'bg-green-500' ? 'text-green-500 dark:text-green-300' :
+              healthScore.color === 'bg-amber-400' ? 'text-amber-500 dark:text-amber-300' :
+              'text-red-500 dark:text-red-300'}
+          `} />
+          <span className="font-semibold text-foreground">{healthScore.label}</span>
         </div>
-        <p className="text-sm text-gray-700">{healthScore.description}</p>
+        <p className="text-sm text-muted-foreground">{healthScore.description}</p>
       </div>
       
       {mealData.food_description && (
-        <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
-          <div className="flex items-center text-sm text-gray-500 mb-1">
+        <div className="mb-4 p-3 bg-card border border-border rounded-lg">
+          <div className="flex items-center text-sm text-muted-foreground mb-1">
             <Info className="h-4 w-4 mr-1 text-spark-500" />
             <span>About this food</span>
           </div>
-          <p className="text-sm text-gray-700">{mealData.food_description}</p>
+          <p className="text-sm text-foreground">{mealData.food_description}</p>
         </div>
       )}
       
       {matchedAllergens.length > 0 && (
-        <div className="mb-4 p-3 bg-red-100 rounded-lg border border-red-200">
-          <div className="flex items-center text-sm text-red-600 mb-1">
+        <div className="mb-4 p-3 bg-destructive/10 border border-destructive rounded-lg">
+          <div className="flex items-center text-sm text-destructive mb-1">
             <AlertTriangle className="h-4 w-4 mr-1" />
             <span className="font-semibold">Allergy Alert!</span>
           </div>
-          <p className="text-sm text-red-700">
+          <p className="text-sm text-destructive dark:text-red-200">
             This food may contain {matchedAllergens.join(', ')}, which you've listed as allergens.
           </p>
         </div>
       )}
       
       {mealData.allergens && mealData.allergens.length > 0 && (
-        <div className="mb-4 p-3 bg-amber-50 rounded-lg border border-amber-100">
-          <div className="flex items-center text-sm text-amber-500 mb-1">
+        <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-100 dark:border-yellow-700 rounded-lg">
+          <div className="flex items-center text-sm text-yellow-600 dark:text-yellow-300 mb-1">
             <AlertTriangle className="h-4 w-4 mr-1" />
             <span>Allergen Information</span>
           </div>
-          <p className="text-sm text-gray-700">
+          <p className="text-sm text-foreground">
             Contains: {mealData.allergens.join(', ')}
           </p>
         </div>
       )}
       
       <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="bg-white rounded-lg p-3 border border-spark-100">
-          <p className="text-sm text-gray-500 mb-1">Calories</p>
-          <p className="text-xl font-medium text-gray-800">{mealData.calories || 0} kcal</p>
+        <div className="bg-card border border-border rounded-lg p-3">
+          <p className="text-sm text-muted-foreground mb-1">Calories</p>
+          <p className="text-xl font-medium text-foreground">{mealData.calories || 0} kcal</p>
         </div>
         
-        <div className="bg-white rounded-lg p-3 border border-spark-100">
-          <p className="text-sm text-gray-500 mb-1">Protein</p>
-          <p className="text-xl font-medium text-gray-800">{mealData.protein || 0}g</p>
+        <div className="bg-card border border-border rounded-lg p-3">
+          <p className="text-sm text-muted-foreground mb-1">Protein</p>
+          <p className="text-xl font-medium text-foreground">{mealData.protein || 0}g</p>
         </div>
         
-        <div className="bg-white rounded-lg p-3 border border-spark-100">
-          <p className="text-sm text-gray-500 mb-1">Carbs</p>
-          <p className="text-xl font-medium text-gray-800">{mealData.carbs || 0}g</p>
+        <div className="bg-card border border-border rounded-lg p-3">
+          <p className="text-sm text-muted-foreground mb-1">Carbs</p>
+          <p className="text-xl font-medium text-foreground">{mealData.carbs || 0}g</p>
         </div>
         
-        <div className="bg-white rounded-lg p-3 border border-spark-100">
-          <p className="text-sm text-gray-500 mb-1">Fat</p>
-          <p className="text-xl font-medium text-gray-800">{mealData.fat || 0}g</p>
+        <div className="bg-card border border-border rounded-lg p-3">
+          <p className="text-sm text-muted-foreground mb-1">Fat</p>
+          <p className="text-xl font-medium text-foreground">{mealData.fat || 0}g</p>
         </div>
       </div>
       
       {(enhancedHealthInsight || mealData.health_insights) && (
-        <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-100">
-          <div className="flex items-center text-sm text-green-600 mb-1">
+        <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/30 border border-green-100 dark:border-green-700 rounded-lg">
+          <div className="flex items-center text-sm text-green-600 dark:text-green-300 mb-1">
             <Info className="h-4 w-4 mr-1" />
             <span>Health Insights</span>
           </div>
-          <p className="text-sm text-gray-700">{enhancedHealthInsight || mealData.health_insights}</p>
+          <p className="text-sm text-foreground">{enhancedHealthInsight || mealData.health_insights}</p>
         </div>
       )}
       
       {mealData.ingredients && mealData.ingredients.length > 0 && (
-        <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
-          <div className="flex items-center text-sm text-gray-500 mb-1">
+        <div className="mb-4 p-3 bg-card border border-border rounded-lg">
+          <div className="flex items-center text-sm text-muted-foreground mb-1">
             <Info className="h-4 w-4 mr-1 text-spark-500" />
             <span>Ingredients</span>
           </div>
-          <p className="text-sm text-gray-700">
+          <p className="text-sm text-foreground">
             {mealData.ingredients.join(', ')}
           </p>
         </div>

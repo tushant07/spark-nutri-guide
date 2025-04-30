@@ -211,7 +211,7 @@ const MealLog = () => {
           </div>
         )}
         
-        <MealSearch />
+        {/* <MealSearch /> */}
         
         {analysisError ? (
           <div className="glass-card rounded-xl p-6 animate-fade-in">
